@@ -1,0 +1,31 @@
+import {
+  createAssociatedTokenAccountInstruction,
+  createTransferCheckedInstruction,
+  getAssociatedTokenAddressSync,
+} from '@solana/spl-token';
+import { PublicKey, Transaction } from '@solana/web3.js';
+
+export const PALM_USD_DECIMALS = 6;
+
+export interface PalmUsdTransferParams {
+  from: PublicKey;
+  to: PublicKey;
+  mint: PublicKey;
+  amountDollars: number;
+}
+
+export function dollarsToPalmMicro(amountDollars: number): bigint {
+  return BigInt(Math.round(amountDollars * 10 ** PALM_USD_DECIMALS));
+}
+
+export function buildPalmUsdTransferTx(params: PalmUsdTransferParams): Transaction {
+  const fromAta = getAssociatedTokenAddressSync(params.mint, params.from);
+  const toAta = getAssociatedTokenAddressSync(params.mint, params.to);
+  const amountMicro = dollarsToPalmMicro(params.amountDollars);
+
+  const tx = new Transaction();
+  tx.add(createAssociatedTokenAccountInstruction(params.from, toAta, params.to, params.mint));
+  tx.add(createTransferCheckedInstruction(fromAta, params.mint, toAta, params.from, amountMicro, PALM_USD_DECIMALS));
+
+  return tx;
+}
