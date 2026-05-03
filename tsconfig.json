@@ -9,9 +9,9 @@
     "rootDir": ".",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "mocha"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "server/src/**/*.ts", "server/test/**/*.ts", "sdk/src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

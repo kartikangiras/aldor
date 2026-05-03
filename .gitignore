@@ -2,3 +2,4 @@ server/.env
 server/.env.example
 node_modules
 target
+dist
