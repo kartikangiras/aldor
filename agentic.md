@@ -10,16 +10,14 @@
 
 ## Reference Architecture
 
-This project is a Solana-native port of the Synergi agent economy (originally built on Stacks/Clarity). The structural mapping is as follows:
+Aldor's `aldor-escrow` Anchor program
+Aldor's `x402-solana` middleware using `@solana/web3.js`
+ Aldor's SOL/Palm USD SPL dual-token settlement
+Aldor's `explorer.solana.com` links
+ Aldor's CLI agent with SNS resolution
+ Aldor's frontend with identical layout, Solana-native data, plus a new Dune Analytics embed component
 
-- Synergi's `agent-registry.clar` → Aldor's `aldor-escrow` Anchor program
-- Synergi's `x402-stacks` payment middleware → Aldor's `x402-solana` middleware using `@solana/web3.js`
-- Synergi's STX/sBTC dual-token settlement → Aldor's SOL/Palm USD SPL dual-token settlement
-- Synergi's Stacks Explorer links → Aldor's `explorer.solana.com` links
-- Synergi's CLI agent → Aldor's CLI agent with SNS resolution
-- Synergi's frontend (Next.js, Canvas topology, SSE, 7 components) → Aldor's frontend with identical layout, Solana-native data, plus a new Dune Analytics embed component
-
-Everything that Synergi does at the application layer — recursive hiring, autonomous cost evaluation, reputation scoring, live topology graph, protocol trace inspector, transaction log — is replicated exactly. Only the blockchain layer changes.
+Everything that does at the application layer — recursive hiring, autonomous cost evaluation, reputation scoring, live topology graph, protocol trace inspector, transaction log — is replicated exactly. Only the blockchain layer changes.
 
 ---
 
@@ -29,7 +27,7 @@ Aldor is a network where a central orchestrator agent receives a natural-languag
 
 The three categories of participants are:
 
-**Orchestrator (Manager Agent):** The entry point. Receives a user query. Uses an LLM to plan which specialists to hire. Evaluates each specialist by a value score (reputation squared divided by price times ten thousand, mirroring Synergi exactly). Initiates x402 payment flows. Enforces hard spend policy. Emits every decision and payment event over Server-Sent Events so the frontend topology graph updates in real time.
+**Orchestrator (Manager Agent):** The entry point. Receives a user query. Uses an LLM to plan which specialists to hire. Evaluates each specialist by a value score (reputation squared divided by price times ten thousand, mirroring exactly). Initiates x402 payment flows. Enforces hard spend policy. Emits every decision and payment event over Server-Sent Events so the frontend topology graph updates in real time.
 
 **Specialist Agents (Worker Services):** Exposed as HTTP services behind x402 middleware. Any HTTP request to a specialist without a valid payment proof receives a 402 Payment Required response containing the Solana payment challenge. After the client settles on-chain and retries with the X-Payment header, the middleware verifies the transaction signature on Solana and allows the request through. Specialists that are marked recursive can themselves act as orchestrators for their own sub-tasks.
 
@@ -59,7 +57,7 @@ The root `package.json` defines npm workspaces covering all five directories and
 
 ### What This Phase Delivers
 
-A deployed Anchor program on Solana Devnet that serves as the financial backbone of the network. Every payment, job, and reputation update flows through this program. It replaces Synergi's `agent-registry.clar` Clarity contract with equivalent functionality in Rust/Anchor.
+A deployed Anchor program on Solana Devnet that serves as the financial backbone of the network. Every payment, job, and reputation update flows through this program. It replaces `agent-registry.clar` Clarity contract with equivalent functionality in Rust/Anchor.
 
 ### Account Structures
 
@@ -103,7 +101,7 @@ The program emits structured events using Anchor's `#[event]` macro. These are t
 
 ### What This Phase Delivers
 
-The `aldor-sdk` package: a reusable TypeScript library that abstracts the x402 payment handshake, keypair signing, and SNS domain resolution. Both the backend orchestrator and the CLI agent import from this SDK. This mirrors Synergi's internal SDK utilities but targets Solana instead of Stacks.
+The `aldor-sdk` package: a reusable TypeScript library that abstracts the x402 payment handshake, keypair signing, and SNS domain resolution. Both the backend orchestrator and the CLI agent import from this SDK. This mirrors internal SDK utilities but targets Solana.
 
 ### SDK Modules
 
@@ -130,7 +128,7 @@ The `aldor-sdk` package: a reusable TypeScript library that abstracts the x402 p
 
 ### What This Phase Delivers
 
-The full Express.js server with the manager agent, all specialist routes behind x402 middleware, SSE event streaming, and the agent registry endpoint. This is the direct equivalent of Synergi's `backend/src/index.ts` and associated logic.
+The full Express.js server with the manager agent, all specialist routes behind x402 middleware, SSE event streaming, and the agent registry endpoint. This is the direct equivalent `backend/src/index.ts` and associated logic.
 
 ### x402 Middleware
 
@@ -150,7 +148,7 @@ The manager is implemented in `manager.ts` and exports a single `runOrchestrator
 
 **Step 1 — Emit planning event.** The function immediately emits a MANAGER_PLANNING step event with the query and depth.
 
-**Step 2 — LLM decomposition.** It calls the configured LLM (Groq llama-3.3-70b as primary, Claude claude-haiku as fallback, matching Synergi's approach). The LLM receives the query and a system prompt describing all available specialists, their capabilities, domains, prices, and token types. The LLM returns a JSON array of tasks, each with an agent name, a route suffix, and the input payload for that specialist. The system prompt instructs the LLM to return only JSON with no preamble.
+**Step 2 — LLM decomposition.** It calls the configured LLM (Groq llama-3.3-70b as primary, Claude claude-haiku as fallback, matching approach). The LLM receives the query and a system prompt describing all available specialists, their capabilities, domains, prices, and token types. The LLM returns a JSON array of tasks, each with an agent name, a route suffix, and the input payload for that specialist. The system prompt instructs the LLM to return only JSON with no preamble.
 
 **Step 3 — Autonomous hiring decision.** For each task in the plan, the manager calls `calculateValueScore(reputation, price)` which is exactly `reputation² / (price × 10_000)`. If multiple specialists could handle the same task type, the one with the highest value score is chosen. This function is pure and deterministic given its inputs.
 
@@ -234,7 +232,7 @@ The CLI prints structured output showing each step of the hiring decision: which
 
 ### What This Phase Delivers
 
-The Aldor operator dashboard: a Next.js 14 App Router application that is a direct visual and structural port of Synergi's frontend. All seven Synergi components are replicated. Solana-specific adapters replace Stacks-specific ones. An eighth component, DuneEmbed, is added for the Dune Analytics integration.
+The Aldor operator dashboard: a Next.js 14 App Router application that is a direct visual and structural port of frontend. All components are replicated. Solana-specific adapters. An eighth component, DuneEmbed, is added for the Dune Analytics integration.
 
 ### Page Routes
 
@@ -242,7 +240,7 @@ The Aldor operator dashboard: a Next.js 14 App Router application that is a dire
 
 **`/agents`** — A dedicated page listing all registered agents with their full metadata, value scores, job history counts, success rates, and SNS domain links.
 
-**`/tools`** — The agent marketplace. Identical in layout to Synergi's Tools page. Shows each specialist as a card with name, description, price, token, endpoint, recursive flag, and a "Hire" button that opens a modal to send a direct query.
+**`/tools`** — The agent marketplace. Identical in layout to Tools page. Shows each specialist as a card with name, description, price, token, endpoint, recursive flag, and a "Hire" button that opens a modal to send a direct query.
 
 **`/docs`** — A documentation page explaining the x402 flow, the SNS domain system, the Palm USD payment path, and links to the Anchor program on Devnet Explorer and the Dune dashboard.
 
@@ -252,21 +250,21 @@ The Aldor operator dashboard: a Next.js 14 App Router application that is a dire
 
 **`AgentChat.tsx`** is the primary user interaction component. It contains a text input and a submit button. On submit it POSTs to `/api/agent/query` and simultaneously subscribes to the SSE stream if not already subscribed. As steps arrive from SSE, it renders them as a scrolling log of execution steps with colored labels (MANAGER_PLANNING in blue, X402_INITIATED in orange, X402_SETTLED in green, SNS_RESOLVED in purple, RESULT_COMPOSED in bright green). At the bottom it displays the final composed result when the RESULT_COMPOSED event arrives. The component also shows the running cost in real time as X402_SETTLED events accumulate.
 
-**`TransactionLog.tsx`** renders a scrollable list of all completed payments. Each payment entry shows: the from agent name and to agent name connected by an arrow, the amount and token type, an A2A depth badge (shown only when depth is greater than zero, styled in orange like Synergi's badges), and a clickable transaction signature link that opens `explorer.solana.com/tx/<sig>?cluster=devnet` in a new tab. New entries appear at the top.
+**`TransactionLog.tsx`** renders a scrollable list of all completed payments. Each payment entry shows: the from agent name and to agent name connected by an arrow, the amount and token type, an A2A depth badge (shown only when depth is greater than zero, styled in orange like badges), and a clickable transaction signature link that opens `explorer.solana.com/tx/<sig>?cluster=devnet` in a new tab. New entries appear at the top.
 
 **`ToolCatalog.tsx`** fetches GET `/api/agents` on mount and renders each agent as a card. Each card shows: the agent name (in large monospace text), the SNS domain in smaller gray text, the price formatted as "X.XXX Palm USD" or "X.XXX SOL", the reputation score as a percentage, whether the agent is recursive (shown as an orange "RECURSIVE" badge), and the agent's category. Cards are arranged in a 4-column grid on desktop. On hover, the card border brightens and shows the agent's endpoint path.
 
-**`ProtocolTrace.tsx`** shows a filtered view of all SSE events of types X402_INITIATED, X402_SETTLED, and SNS_RESOLVED. Each event is rendered as a log line with a timestamp, a colored type label, and the relevant details: for SNS_RESOLVED it shows the domain and the first 12 characters of the resolved public key; for X402_INITIATED it shows the agent name, price, token, and current depth; for X402_SETTLED it shows a checkmark and the first 20 characters of the transaction signature. This component is the "raw protocol transparency" view, equivalent to what Synergi shows as its Protocol Trace panel.
+**`ProtocolTrace.tsx`** shows a filtered view of all SSE events of types X402_INITIATED, X402_SETTLED, and SNS_RESOLVED. Each event is rendered as a log line with a timestamp, a colored type label, and the relevant details: for SNS_RESOLVED it shows the domain and the first 12 characters of the resolved public key; for X402_INITIATED it shows the agent name, price, token, and current depth; for X402_SETTLED it shows a checkmark and the first 20 characters of the transaction signature. This component is the "raw protocol transparency" view, equivalent to what shows as its Protocol Trace panel.
 
 **`ExecutionSteps.tsx`** renders all SSE events in chronological order as a flat list with step numbers. Each step shows its type, a human-readable description auto-generated from the event data, and how many milliseconds elapsed since the previous step. This gives a full linear audit trail of everything the manager did, in sequence.
 
 **`WalletInfo.tsx`** fetches the SOL balance of the agent wallet public key from the configured Devnet RPC on mount and on a 30-second polling interval. It displays: the network label "SOLANA DEVNET", the agent public key truncated to first 8 and last 6 characters with an ellipsis, the SOL balance, and the Palm USD balance (fetched via `getTokenAccountBalance` on the agent's Palm USD ATA). It also shows a green "CONNECTED" or red "DISCONNECTED" indicator based on whether the last RPC call succeeded.
 
-**`DuneEmbed.tsx`** (Aldor-only, not in Synergi) renders two side-by-side `<iframe>` elements embedding Dune chart visualizations. The two charts are "Agentic GDP" (total Palm USD volume through the aldor-escrow program per hour) and "Economic Velocity" (number of successful x402 handshakes per hour). Each iframe uses the Dune embed URL format `https://dune.com/embeds/<chart-id>/visualization`. The chart IDs are read from environment variables `NEXT_PUBLIC_DUNE_CHART_1` and `NEXT_PUBLIC_DUNE_CHART_2`. While those environment variables are not set (during early development), each iframe slot renders a styled placeholder box with the chart name and instructions to configure the variable.
+**`DuneEmbed.tsx`** (Aldor-only renders two side-by-side `<iframe>` elements embedding Dune chart visualizations. The two charts are "Agentic GDP" (total Palm USD volume through the aldor-escrow program per hour) and "Economic Velocity" (number of successful x402 handshakes per hour). Each iframe uses the Dune embed URL format `https://dune.com/embeds/<chart-id>/visualization`. The chart IDs are read from environment variables `NEXT_PUBLIC_DUNE_CHART_1` and `NEXT_PUBLIC_DUNE_CHART_2`. While those environment variables are not set (during early development), each iframe slot renders a styled placeholder box with the chart name and instructions to configure the variable.
 
 ### Visual Design System
 
-The Aldor dashboard uses the same cyber-minimalist aesthetic as Synergi. Background is pure black. Primary text is terminal green (`#00ff41`). Secondary text is muted green (`#4a7c59`). Accent for payments and warnings is orange (`#ff6b00`). All text is monospace (font-family: monospace or a monospace system font). Borders are dark green (`#1a3a1a`). Buttons have green text on black background with a green border that brightens on hover. No rounded corners. No shadows. No animations except for the canvas topology graph and the SSE step log append animation (new items fade in from opacity 0 to 1).
+The Aldor dashboard uses the same cyber-minimalist aesthetic as Background is pure black. Primary text is terminal green (`#00ff41`). Secondary text is muted green (`#4a7c59`). Accent for payments and warnings is orange (`#ff6b00`). All text is monospace (font-family: monospace or a monospace system font). Borders are dark green (`#1a3a1a`). Buttons have green text on black background with a green border that brightens on hover. No rounded corners. No shadows. No animations except for the canvas topology graph and the SSE step log append animation (new items fade in from opacity 0 to 1).
 
 Status badges at the top of the dashboard display: "RECURSIVE DELEGATION: ON", "X402 PAYMENTS: VERIFIED", "SNS DOMAINS: ACTIVE", and "PALM USD: LIVE".
 
@@ -371,7 +369,7 @@ The environment variable `MOCK_PAYMENTS=true` causes the payment signer to retur
 
 ### Reputation Calculation
 
-The reputation system is identical to Synergi's: all agents start at 5,000 basis points (50%). Each successful job adds 50 basis points. Each failed job subtracts 100 basis points. Reputation is clamped between 0 and 10,000. The value score used for hiring decisions is `reputation² / (price × 10,000)`. Higher reputation and lower price both increase the score. When multiple specialists offer the same capability, the one with the highest value score is chosen. The manager logs the value score for each evaluated specialist in the PLAN_CREATED step event so it is visible in the ProtocolTrace.
+The reputation system: all agents start at 5,000 basis points (50%). Each successful job adds 50 basis points. Each failed job subtracts 100 basis points. Reputation is clamped between 0 and 10,000. The value score used for hiring decisions is `reputation² / (price × 10,000)`. Higher reputation and lower price both increase the score. When multiple specialists offer the same capability, the one with the highest value score is chosen. The manager logs the value score for each evaluated specialist in the PLAN_CREATED step event so it is visible in the ProtocolTrace.
 
 ### Solana RPC Configuration
 
