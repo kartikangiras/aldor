@@ -52,7 +52,9 @@ export const handlers = {
 
   deepResearch: async (req: Request, res: Response) => {
     const topic = String(req.body?.topic ?? req.body?.query ?? '');
-    const emitter = req.app.get('sseEmitter') as EventEmitter;
+    const sessionId = String(req.body?.session ?? req.query?.session ?? req.header('X-Aldor-Session') ?? 'default');
+    const getEmitter = req.app.get('getSessionEmitter') as (session: string) => EventEmitter;
+    const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'DeepResearch')!.priceAtomic / 1_000_000, 0);
     const result = await runOrchestrator(topic, emitter, budget, depth);
@@ -61,7 +63,9 @@ export const handlers = {
 
   coding: async (req: Request, res: Response) => {
     const task = String(req.body?.task ?? req.body?.query ?? '');
-    const emitter = req.app.get('sseEmitter') as EventEmitter;
+    const sessionId = String(req.body?.session ?? req.query?.session ?? req.header('X-Aldor-Session') ?? 'default');
+    const getEmitter = req.app.get('getSessionEmitter') as (session: string) => EventEmitter;
+    const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'CodingAgent')!.priceAtomic / 1_000_000, 0);
     const result = await runOrchestrator(`code review ${task}`, emitter, budget, depth);

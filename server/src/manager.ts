@@ -3,7 +3,8 @@ import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { createPaidAxios, PaymentSigner, resolveAgent } from '../../sdk/src/index.js';
 import { AGENTS, byName } from './agents.js';
 import { serverConfig } from './config.js';
-import type { AgentDefinition, StepEvent } from './phase3-types.js';
+import type { AgentDefinition, StepEvent } from './eventtypes.js';
+import { recordJobOutcomeOnChain } from './reputation.js';
 
 interface PlannedTask {
   agent: string;
@@ -80,9 +81,11 @@ export async function runOrchestrator(
   let spentPalm = 0;
   const parts: string[] = [];
 
+  const payerSecret = parsePayerSecret(serverConfig.payerSecretKey);
+  const payerPublicKey = Keypair.fromSecretKey(payerSecret).publicKey.toBase58();
   const signer = new PaymentSigner({
     connection: new Connection(serverConfig.solanaRpcUrl, 'confirmed'),
-    keypairSecretKey: parsePayerSecret(serverConfig.payerSecretKey),
+    keypairSecretKey: payerSecret,
     palmUsdMint: new PublicKey(serverConfig.palmUsdMint),
   });
 
@@ -95,18 +98,47 @@ export async function runOrchestrator(
         type: 'BUDGET_EXCEEDED',
         depth,
         agent: agent.name,
-        cost: palmCost,
-        token: agent.token,
-        spent: spentPalm,
+        message: 'Budget remaining is smaller than specialist price.',
       });
       continue;
     }
 
-    const resolved = await resolveAgent(agent.domain, process.env);
-    emit(emitter, { type: 'SNS_RESOLVED', depth, agent: agent.name, domain: agent.domain, message: resolved, spent: spentPalm });
+    emit(emitter, { type: 'SNS_RESOLVING', depth, agent: agent.name, domain: agent.domain });
+    let resolved: string;
+    try {
+      resolved = await resolveAgent(agent.domain, process.env);
+    } catch (error: any) {
+      emit(emitter, {
+        type: 'SPECIALIST_FAILED',
+        depth,
+        agent: agent.name,
+        domain: agent.domain,
+        message: `SNS_RESOLUTION_FAILED: ${error?.message ?? String(error)}`,
+      });
+      continue;
+    }
+    emit(emitter, {
+      type: 'SNS_RESOLVED',
+      depth,
+      agent: agent.name,
+      domain: agent.domain,
+      message: 'stealth key resolved (hidden)',
+    });
 
     const paid = createPaidAxios({
-      signChallenge: (challenge) => signer.signChallenge(challenge),
+      signChallenge: (challenge) => {
+        if (serverConfig.mockPayments) {
+          return Promise.resolve({
+            signature: `mock-umbra-${Date.now()}`,
+            ephemeralKey: Keypair.generate().publicKey.toBase58(),
+            payer: payerPublicKey,
+            amount: challenge.maxAmountRequired,
+            asset: challenge.asset,
+            resource: challenge.resource,
+          });
+        }
+        return signer.signChallenge(challenge);
+      },
       budget: {
         maxDepth: 3,
         budgetRemaining: String(Math.max(budget - spentPalm, 0)),
@@ -114,40 +146,57 @@ export async function runOrchestrator(
     });
 
     emit(emitter, {
-      type: 'X402_INITIATED',
+      type: 'UMBRA_TRANSFER_INITIATED',
       depth,
       agent: agent.name,
-      token: agent.token,
-      cost: agent.priceAtomic,
-      spent: spentPalm,
+      message: 'payment flow started',
     });
 
-    const response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, {
-      headers: {
-        'X-Aldor-Max-Depth': String(depth),
-        'X-Aldor-Budget-Remaining': String(Math.max(budget - spentPalm, 0)),
-      },
-    });
+    let response;
+    try {
+      response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, {
+        headers: {
+          'X-Aldor-Max-Depth': String(depth),
+          'X-Aldor-Budget-Remaining': String(Math.max(budget - spentPalm, 0)),
+        },
+      });
+    } catch (error: any) {
+      emit(emitter, {
+        type: 'SPECIALIST_FAILED',
+        depth,
+        agent: agent.name,
+        domain: agent.domain,
+        message: error?.message ?? String(error),
+      });
+      continue;
+    }
 
     const responseText = typeof response.data?.result === 'string' ? response.data.result : JSON.stringify(response.data);
     parts.push(`${agent.name}: ${responseText}`);
 
-    const txSig = (response.config.headers as any)?.['X-Payment'] ?? null;
+    const txSig =
+      (response.config.headers as any)?.['X-Aldor-Payment-Signature'] ??
+      (response.config.headers as any)?.['X-Payment-Signature'] ??
+      null;
+    emit(emitter, {
+      type: 'UMBRA_TRANSFER_CONFIRMED',
+      depth,
+      agent: agent.name,
+      txSignature: typeof txSig === 'string' ? txSig : undefined,
+    });
     spentPalm += palmCost;
 
     emit(emitter, {
       type: 'X402_SETTLED',
       depth,
       agent: agent.name,
-      cost: agent.priceAtomic,
-      token: agent.token,
-      spent: spentPalm,
       txSignature: typeof txSig === 'string' ? txSig : undefined,
     });
+    await recordJobOutcomeOnChain(agent.domain, true);
   }
 
   const result = parts.join('\n');
-  emit(emitter, { type: 'RESULT_COMPOSED', depth, spent: spentPalm, message: result });
+  emit(emitter, { type: 'RESULT_COMPOSED', depth, message: result });
   return result;
 }
 

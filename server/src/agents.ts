@@ -1,10 +1,9 @@
-import type { AgentDefinition } from './phase3-types.js';
+import type { AgentDefinition } from './eventtypes.js';
 
 export const AGENTS: AgentDefinition[] = [
   {
     name: 'WeatherBot',
     domain: 'weather.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/weather',
     category: 'utility',
     token: 'SOL',
@@ -16,7 +15,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'Summarizer',
     domain: 'summarizer.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/summarize',
     category: 'nlp',
     token: 'PALM_USD',
@@ -28,7 +26,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'MathSolver',
     domain: 'math.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/math-solve',
     category: 'utility',
     token: 'PALM_USD',
@@ -40,7 +37,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'SentimentAI',
     domain: 'sentiment.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/sentiment',
     category: 'nlp',
     token: 'PALM_USD',
@@ -52,7 +48,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'CodeExplainer',
     domain: 'code-explainer.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/code-explain',
     category: 'code',
     token: 'PALM_USD',
@@ -64,7 +59,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'TranslateBot',
     domain: 'translate.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/agent/translate',
     category: 'nlp',
     token: 'PALM_USD',
@@ -76,7 +70,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'DeepResearch',
     domain: 'research.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/agent/research',
     category: 'research',
     token: 'PALM_USD',
@@ -88,7 +81,6 @@ export const AGENTS: AgentDefinition[] = [
   {
     name: 'CodingAgent',
     domain: 'coding.aldor.sol',
-    recipient: '11111111111111111111111111111111',
     path: '/api/agent/code',
     category: 'code',
     token: 'PALM_USD',

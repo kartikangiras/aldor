@@ -11,4 +11,4 @@ export type {
   StepEventType,
   TokenKind,
   X402Challenge,
-} from './phase3-types.js';
+} from './eventtypes.js';

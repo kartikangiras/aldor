@@ -23,7 +23,7 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'PALM_USD',
-        recipient: '11111111111111111111111111111111',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
@@ -41,7 +41,8 @@ describe('x402 middleware', () => {
     assert.equal(called, false);
     assert.equal(res.statusCode, 402);
     assert.equal(res.body.x402Version, 1);
-    assert.equal(res.body.accepts[0].payTo, '11111111111111111111111111111111');
+    assert.equal(res.body.recipient, 'summarizer.aldor.sol');
+    assert.equal(res.body.amount, '100');
   });
 
   it('rejects invalid payment proof', async () => {
@@ -49,14 +50,14 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'PALM_USD',
-        recipient: '11111111111111111111111111111111',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
       async () => false,
     );
 
-    const req: any = { header: (name: string) => (name === 'X-Payment' ? 'ZmFrZQ==' : null) };
+    const req: any = { header: (name: string) => (name === 'X-Aldor-Payment-Signature' ? 'fake-sig' : null) };
     const res = mockRes();
 
     await mw(req, res as any, () => {});
@@ -69,7 +70,7 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'PALM_USD',
-        recipient: '11111111111111111111111111111111',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
@@ -89,19 +90,19 @@ describe('x402 middleware', () => {
     const palm = buildChallenge(req, {
       priceAtomic: 100,
       tokenKind: 'PALM_USD',
-      recipient: '11111111111111111111111111111111',
+      snsDomain: 'summarizer.aldor.sol',
       description: 'desc',
       resourcePath: '/paid',
     });
     const sol = buildChallenge(req, {
       priceAtomic: 100,
       tokenKind: 'SOL',
-      recipient: '11111111111111111111111111111111',
+      snsDomain: 'weather.aldor.sol',
       description: 'desc',
       resourcePath: '/paid',
     });
 
-    assert.equal(sol.accepts[0].asset, 'SOL');
-    assert.equal(typeof palm.accepts[0].asset, 'string');
+    assert.equal(sol.asset, 'SOL');
+    assert.equal(typeof palm.asset, 'string');
   });
 });

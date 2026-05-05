@@ -3,9 +3,12 @@ export type TokenKind = 'SOL' | 'PALM_USD';
 export type StepEventType =
   | 'MANAGER_PLANNING'
   | 'PLAN_CREATED'
+  | 'SNS_RESOLVING'
   | 'SNS_RESOLVED'
-  | 'X402_INITIATED'
+  | 'UMBRA_TRANSFER_INITIATED'
+  | 'UMBRA_TRANSFER_CONFIRMED'
   | 'X402_SETTLED'
+  | 'SPECIALIST_FAILED'
   | 'BUDGET_EXCEEDED'
   | 'RESULT_COMPOSED';
 
@@ -25,7 +28,6 @@ export interface StepEvent {
 export interface AgentDefinition {
   name: string;
   domain: string;
-  recipient: string;
   path: string;
   category: string;
   token: TokenKind;
@@ -36,34 +38,33 @@ export interface AgentDefinition {
 }
 
 export interface PaymentProofV1 {
-  signature: string;
-  payer: string;
-  amount: string;
-  asset: string;
-  resource: string;
+  umbraSignature: string;
+  umbraEphemeralKey: string;
+  payer?: string;
+  timestamp?: number;
 }
 
 export interface MiddlewareConfig {
   priceAtomic: number;
   tokenKind: TokenKind;
-  recipient: string;
+  snsDomain: string;
+  recipientWallet?: string;
+  paymentMode?: 'server' | 'wallet';
   description: string;
   resourcePath: string;
 }
 
-export interface X402Accept {
-  scheme: string;
-  network: string;
-  maxAmountRequired: string;
-  resource: string;
-  description: string;
-  mimeType: string;
-  payTo: string;
-  maxTimeoutSeconds: number;
-  asset: string;
-}
-
 export interface X402Challenge {
   x402Version: number;
-  accepts: [X402Accept];
+  recipient: string;
+  amount: string;
+  asset: string;
+  network: 'solana-devnet';
+  expiresAt: number;
+  description: string;
+  resource: string;
+  paymentMode?: 'server' | 'wallet';
+  recipientWallet?: string;
+  mint?: string;
+  decimals?: number;
 }

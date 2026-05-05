@@ -21,6 +21,19 @@ describe('manager and registry', () => {
     assert.equal(events[events.length - 1], 'RESULT_COMPOSED');
   });
 
+  it('does not emit payment amounts in budget exceeded event payload', async () => {
+    const emitter = new EventEmitter();
+    const payloads: any[] = [];
+    emitter.on('step', (e: any) => payloads.push(e));
+
+    await runOrchestrator('research this topic', emitter, 0, 0);
+    const budgetEvent = payloads.find((e) => e.type === 'BUDGET_EXCEEDED');
+    assert.equal(Boolean(budgetEvent), true);
+    assert.equal('cost' in budgetEvent, false);
+    assert.equal('spent' in budgetEvent, false);
+    assert.equal('token' in budgetEvent, false);
+  });
+
   it('registry returns all specialists in expected shape', () => {
     const registry = getAgentRegistry();
     assert.equal(Array.isArray(registry), true);
