@@ -6,7 +6,7 @@ skip-lint = false
 aldor = "11111111111111111111111111111111"
 
 [programs.devnet]
-aldor = "11111111111111111111111111111111"
+aldor = "2km5TwkgiaDWfAyojtntyj5Djuz6ivcBVvWR8SSR4DQj"
 
 [programs.mainnet]
 aldor = "11111111111111111111111111111111"

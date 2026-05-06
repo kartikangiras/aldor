@@ -17,11 +17,19 @@ export interface X402Accept {
 
 export interface X402Challenge {
   x402Version: number;
-  accepts: X402Accept[];
+  accepts?: X402Accept[];
+  recipient?: string;
+  amount?: string;
+  asset?: string;
+  network?: string;
+  expiresAt?: number;
+  description?: string;
+  resource?: string;
 }
 
 export interface PaymentProof {
   signature: string;
+  ephemeralKey?: string;
   payer: string;
   amount: string;
   asset: string;
@@ -33,6 +41,7 @@ export interface PaymentSignerOptions {
   keypairSecretKey: Uint8Array;
   palmUsdMint: PublicKey;
   commitment?: 'processed' | 'confirmed' | 'finalized';
+  registryProgramId?: PublicKey;
 }
 
 export interface BudgetPolicy {

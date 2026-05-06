@@ -6,6 +6,8 @@ import {
   Transaction,
 } from '@solana/web3.js';
 import { buildPalmUsdTransferTx } from './palmUsd.js';
+import { executeUmbraTransfer } from './umbra.js';
+import { resolveRecipientStealthKey } from './sns.js';
 import type { PaymentProof, PaymentSignerOptions, X402Accept } from './types.js';
 
 function parseAmountToBigInt(value: string): bigint {
@@ -21,21 +23,23 @@ export class PaymentSigner {
   private readonly payer: Keypair;
   private readonly palmUsdMint: PublicKey;
   private readonly commitment: 'processed' | 'confirmed' | 'finalized';
+  private readonly registryProgramId?: PublicKey;
 
   constructor(options: PaymentSignerOptions) {
     this.connection = options.connection;
     this.payer = Keypair.fromSecretKey(options.keypairSecretKey);
     this.palmUsdMint = options.palmUsdMint;
     this.commitment = options.commitment ?? 'confirmed';
+    this.registryProgramId = options.registryProgramId;
   }
 
   async signChallenge(challenge: X402Accept): Promise<PaymentProof> {
-    const payTo = new PublicKey(challenge.payTo);
     const amountRaw = parseAmountToBigInt(challenge.maxAmountRequired);
     const kind = parseAssetKind(challenge.asset);
 
     let tx: Transaction;
     if (kind === 'SOL') {
+      const payTo = new PublicKey(challenge.payTo);
       tx = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: this.payer.publicKey,
@@ -44,12 +48,23 @@ export class PaymentSigner {
         }),
       );
     } else {
-      tx = buildPalmUsdTransferTx({
-        from: this.payer.publicKey,
-        to: payTo,
-        mint: this.palmUsdMint,
-        amountDollars: Number(amountRaw) / 1_000_000,
+      const stealthKey = await resolveRecipientStealthKey(challenge.payTo, this.connection, process.env);
+      const result = await executeUmbraTransfer({
+        connection: this.connection,
+        payer: this.payer,
+        stealthPublicKey: stealthKey,
+        assetMint: this.palmUsdMint,
+        amount: amountRaw,
       });
+
+      return {
+        signature: result.signature,
+        ephemeralKey: result.ephemeralKey ?? this.payer.publicKey.toBase58(),
+        payer: this.payer.publicKey.toBase58(),
+        amount: challenge.maxAmountRequired,
+        asset: challenge.asset,
+        resource: challenge.resource,
+      };
     }
 
     tx.feePayer = this.payer.publicKey;
@@ -65,6 +80,7 @@ export class PaymentSigner {
 
     return {
       signature,
+      ephemeralKey: this.payer.publicKey.toBase58(),
       payer: this.payer.publicKey.toBase58(),
       amount: challenge.maxAmountRequired,
       asset: challenge.asset,

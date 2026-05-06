@@ -1,4 +1,7 @@
-import { PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { fetchAgentRegistryByDomain, getStealthKeyForDomain } from './registry.js';
+
+const stealthCache = new Map<string, string>();
 
 function getFallbackMap(env: NodeJS.ProcessEnv): Record<string, string> {
   const raw = env.ALDOR_SNS_FALLBACK_MAP;
@@ -34,4 +37,30 @@ export async function resolveAgent(domain: string, env: NodeJS.ProcessEnv = proc
   }
 
   return new PublicKey(fallback).toBase58();
+}
+
+export async function resolveRecipientStealthKey(
+  domain: string,
+  connection: Connection,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<string> {
+  const cached = stealthCache.get(domain);
+  if (cached) return cached;
+
+  const envStealth = getStealthKeyForDomain(domain, env);
+  if (envStealth) {
+    stealthCache.set(domain, envStealth);
+    return envStealth;
+  }
+
+  const registry = await fetchAgentRegistryByDomain(domain, connection, env).catch(() => null);
+  const stealthKey = registry?.umbraStealthPublicKey;
+  if (stealthKey) {
+    stealthCache.set(domain, stealthKey);
+    return stealthKey;
+  }
+
+  const fallback = await resolveAgent(domain, env);
+  stealthCache.set(domain, fallback);
+  return fallback;
 }
