@@ -1,5 +1,20 @@
 import { AGENTS } from './agents.js';
 
+interface RegistryLikeAgent {
+  snsDomain: string;
+  name?: string;
+  category?: string;
+  priceLamports?: string;
+  priceMicroStablecoin?: number | string;
+  reputation?: number | string;
+  reputationBps?: string;
+  isRecursive?: boolean;
+  isActive?: boolean;
+  capabilities?: string[];
+  walletAddress?: string;
+  owner?: string;
+}
+
 export interface AgentBalanceInfo {
   address: string;
   stablecoinBalance: string;
@@ -98,6 +113,23 @@ export async function getAgentRegistryEnriched(
   stablecoinMint: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<Array<Record<string, unknown>>> {
+  return enrichAgentsWithBalances(AGENTS.map((agent) => ({
+    snsDomain: agent.domain,
+    name: agent.name,
+    category: agent.category,
+    priceMicroStablecoin: agent.priceAtomic,
+    reputation: agent.reputation,
+    isRecursive: agent.recursive,
+    isActive: true,
+    capabilities: [agent.category],
+  })), stablecoinMint, env);
+}
+
+export async function enrichAgentsWithBalances(
+  agents: RegistryLikeAgent[],
+  stablecoinMint: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<Array<Record<string, unknown>>> {
   const walletMap = (() => {
     const raw = env.ALDOR_AGENT_WALLET_MAP;
     if (!raw) return {} as Record<string, string>;
@@ -109,29 +141,30 @@ export async function getAgentRegistryEnriched(
   })();
 
   const balances = await Promise.all(
-    AGENTS.map((agent) => {
-      const address = walletMap[agent.domain] ?? agent.domain;
+    agents.map((agent) => {
+      const address = agent.walletAddress ?? agent.owner ?? walletMap[agent.snsDomain] ?? agent.snsDomain;
       return getStablecoinBalanceForAddress(address, stablecoinMint, env).catch(() => ({
-      address,
-      stablecoinBalance: '0',
-    }));
+        address,
+        stablecoinBalance: '0',
+      }));
     }),
   );
 
-  return AGENTS.map((agent) => {
-    const address = walletMap[agent.domain] ?? agent.domain;
+  return agents.map((agent) => {
+    const address = agent.walletAddress ?? agent.owner ?? walletMap[agent.snsDomain] ?? agent.snsDomain;
     const balance = balances.find((b) => b.address === address);
     return {
-      snsDomain: agent.domain,
-      name: agent.name,
-      category: agent.category,
-      priceMicroStablecoin: agent.priceAtomic,
-      reputation: agent.reputation,
-      isRecursive: agent.recursive,
-      isActive: true,
-      capabilities: [agent.category],
+      snsDomain: agent.snsDomain,
+      name: agent.name ?? '',
+      category: agent.category ?? '',
+      priceMicroStablecoin: agent.priceMicroStablecoin ?? agent.priceLamports ?? '0',
+      reputation: agent.reputation ?? agent.reputationBps ?? '0',
+      isRecursive: agent.isRecursive ?? false,
+      isActive: agent.isActive ?? true,
+      capabilities: agent.capabilities ?? (agent.category ? [agent.category] : []),
       walletAddress: address,
       stablecoinBalance: balance?.stablecoinBalance ?? '0',
+      owner: agent.owner,
     };
   });
 }

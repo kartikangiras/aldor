@@ -89,6 +89,17 @@ export const AGENTS: AgentDefinition[] = [
     reputation: 8_500,
     description: 'Recursive coding orchestrator',
   },
+  {
+    name: 'SovereignSpecialist',
+    domain: 'sovereign.aldor.sol',
+    path: '/api/agent/sovereign',
+    category: 'qvac',
+    token: 'PALM_USD',
+    priceAtomic: 2_500,
+    recursive: false,
+    reputation: 8_400,
+    description: 'Local-first QVAC specialist for sovereign inference',
+  },
 ];
 
 export function formatPrice(agent: AgentDefinition): string {

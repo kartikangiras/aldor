@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { EventEmitter } from 'node:events';
 import { AGENTS } from './agents.js';
 import { runOrchestrator } from './manager.js';
+import { runQvacCompletion } from './qvac.js';
 
 function getDepth(req: Request): number {
   const raw = req.header('X-Aldor-Max-Depth');
@@ -53,22 +54,52 @@ export const handlers = {
   deepResearch: async (req: Request, res: Response) => {
     const topic = String(req.body?.topic ?? req.body?.query ?? '');
     const sessionId = String(req.body?.session ?? req.query?.session ?? req.header('X-Aldor-Session') ?? 'default');
+    const requestId = req.header('X-Aldor-Request-Id') ?? undefined;
+    const parentJobId = req.header('X-Aldor-Job-Id') ?? undefined;
     const getEmitter = req.app.get('getSessionEmitter') as (session: string) => EventEmitter;
     const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'DeepResearch')!.priceAtomic / 1_000_000, 0);
-    const result = await runOrchestrator(topic, emitter, budget, depth);
+    const result = await runOrchestrator(topic, emitter, budget, depth, {
+      sessionId,
+      requestId,
+      parentJobId,
+    });
     res.json({ result: result || `Research notes: ${topic}` });
   },
 
   coding: async (req: Request, res: Response) => {
     const task = String(req.body?.task ?? req.body?.query ?? '');
     const sessionId = String(req.body?.session ?? req.query?.session ?? req.header('X-Aldor-Session') ?? 'default');
+    const requestId = req.header('X-Aldor-Request-Id') ?? undefined;
+    const parentJobId = req.header('X-Aldor-Job-Id') ?? undefined;
     const getEmitter = req.app.get('getSessionEmitter') as (session: string) => EventEmitter;
     const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'CodingAgent')!.priceAtomic / 1_000_000, 0);
-    const result = await runOrchestrator(`code review ${task}`, emitter, budget, depth);
+    const result = await runOrchestrator(`code review ${task}`, emitter, budget, depth, {
+      sessionId,
+      requestId,
+      parentJobId,
+    });
     res.json({ result: result || `Coding result for: ${task}` });
+  },
+
+  sovereign: async (req: Request, res: Response) => {
+    const task = String(req.body?.task ?? req.body?.query ?? '');
+    if (!task) {
+      res.status(400).json({ error: 'MISSING_TASK' });
+      return;
+    }
+
+    let result: string;
+    try {
+      result = await runQvacCompletion(task);
+    } catch (error: any) {
+      res.status(500).json({ error: 'QVAC_UNAVAILABLE', detail: error?.message ?? String(error) });
+      return;
+    }
+
+    res.json({ result });
   },
 };

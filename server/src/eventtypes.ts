@@ -23,6 +23,10 @@ export interface StepEvent {
   token?: TokenKind;
   txSignature?: string;
   message?: string;
+  requestId?: string;
+  jobId?: string;
+  parentJobId?: string;
+  sessionId?: string;
 }
 
 export interface AgentDefinition {

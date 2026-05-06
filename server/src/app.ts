@@ -1,13 +1,22 @@
 import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import { randomUUID } from 'node:crypto';
 import { AGENTS } from './agents.js';
-import { getAgentRegistry, runOrchestrator } from './manager.js';
+import { runOrchestrator } from './manager.js';
 import { x402Required } from './middleware.js';
 import { handlers } from './specialists.js';
 import { getSessionEmitter } from './sessions.js';
-import { getAgentRegistryEnriched, getRecentTransactions } from './covalent.js';
+import { enrichAgentsWithBalances, getRecentTransactions } from './covalent.js';
 import { serverConfig } from './config.js';
 import { fundAgentViaDodo, offRampEarnings } from '../../sdk/src/dodo.js';
 import { getAgentWalletForDomain, getAgentWalletMap, isValidSolanaAddress } from './wallets.js';
+import { getUmbraSecretForDomain } from './umbra.js';
+import { getPaymentStats, listPayments } from './ledger.js';
+import { fetchRegistryAgents } from './registry.js';
+import { seedRegistryAgents } from './registrySeed.js';
+import { fetchPalmUsdCirculation } from './palmusd.js';
 
 function asyncHandler<T extends express.RequestHandler>(fn: T): express.RequestHandler {
   return (req, res, next) => {
@@ -17,8 +26,12 @@ function asyncHandler<T extends express.RequestHandler>(fn: T): express.RequestH
 
 export function createApp() {
   const app = express();
-  app.use(express.json());
+  app.use(helmet());
+  app.use(cors());
+  app.use(morgan('combined'));
   app.set('getSessionEmitter', getSessionEmitter);
+
+  app.use(express.json());
 
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
@@ -27,8 +40,9 @@ export function createApp() {
   app.get('/api/payment/config', (_req, res) => {
     res.json({
       paymentMode: serverConfig.paymentMode,
-      network: 'solana-devnet',
+      network: serverConfig.solanaCluster === 'mainnet' ? 'solana-mainnet' : 'solana-devnet',
       palmUsdMint: serverConfig.palmUsdMint,
+      umbraEnabled: serverConfig.umbraEnabled,
     });
   });
 
@@ -40,6 +54,10 @@ export function createApp() {
       const addr = walletMap[domain];
       return addr ? !isValidSolanaAddress(addr) : false;
     });
+
+    const missingUmbraSecrets = serverConfig.umbraEnabled
+      ? requiredDomains.filter((domain) => !getUmbraSecretForDomain(domain))
+      : [];
 
     const missingEnv: string[] = [];
     if (!process.env.SOLANA_RPC_URL) missingEnv.push('SOLANA_RPC_URL');
@@ -55,10 +73,12 @@ export function createApp() {
     res.json({
       ok,
       paymentMode: serverConfig.paymentMode,
+      umbraEnabled: serverConfig.umbraEnabled,
       checks: {
         walletMapCount: Object.keys(walletMap).length,
         missingWallets,
         invalidWallets,
+        missingUmbraSecrets,
         missingEnv,
       },
       recommendations: [
@@ -89,9 +109,51 @@ export function createApp() {
   });
 
   app.get('/api/agents', asyncHandler(async (_req, res) => {
-    const agents = await getAgentRegistryEnriched(serverConfig.palmUsdMint);
-    res.json(agents);
+    const registryAgents = await fetchRegistryAgents();
+    const enriched = await enrichAgentsWithBalances(registryAgents, serverConfig.palmUsdMint);
+    res.json(enriched);
   }));
+
+  app.get('/api/tools', (_req, res) => {
+    res.json({ tools: AGENTS.map((agent) => ({
+      name: agent.name,
+      snsDomain: agent.domain,
+      path: agent.path,
+      category: agent.category,
+      priceAtomic: agent.priceAtomic,
+      token: agent.token,
+      recursive: agent.recursive,
+      description: agent.description,
+    })) });
+  });
+
+  app.get('/api/registry', (_req, res) => {
+    fetchRegistryAgents().then((agents) => res.json(agents)).catch((error: any) => {
+      res.status(500).json({ error: 'REGISTRY_LOAD_FAILED', detail: error?.message ?? String(error) });
+    });
+  });
+
+  app.post('/api/registry/seed', asyncHandler(async (_req, res) => {
+    if ((process.env.ALLOW_REGISTRY_SEED ?? 'false').toLowerCase() !== 'true') {
+      res.status(403).json({ error: 'REGISTRY_SEED_DISABLED' });
+      return;
+    }
+    const result = await seedRegistryAgents();
+    res.json(result);
+  }));
+
+  app.get('/api/payments', (req, res) => {
+    const limit = Number(req.query.limit ?? 100);
+    const offset = Number(req.query.offset ?? 0);
+    const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 500) : 100;
+    const safeOffset = Number.isFinite(offset) ? Math.max(offset, 0) : 0;
+    const items = listPayments(safeLimit, safeOffset);
+    res.json({ items, limit: safeLimit, offset: safeOffset });
+  });
+
+  app.get('/api/stats', (_req, res) => {
+    res.json(getPaymentStats());
+  });
 
   app.get('/api/analytics/recent-transactions', asyncHandler(async (_req, res) => {
     const walletMap = (() => {
@@ -106,6 +168,11 @@ export function createApp() {
     const addresses = AGENTS.map((agent) => walletMap[agent.domain]).filter((v): v is string => Boolean(v));
     const txs = await getRecentTransactions(addresses);
     res.json({ items: txs });
+  }));
+
+  app.get('/api/analytics/palmusd-circulation', asyncHandler(async (_req, res) => {
+    const circulation = await fetchPalmUsdCirculation();
+    res.json(circulation);
   }));
 
   app.post('/api/dodo/fund', asyncHandler(async (req, res) => {
@@ -142,8 +209,9 @@ export function createApp() {
     }
 
     const budget = Number(req.body?.budget ?? req.header('X-Aldor-Budget-Remaining') ?? 0.01);
-    const result = await runOrchestrator(query, emitter, budget, depth);
-    res.json({ result });
+    const requestId = req.header('X-Aldor-Request-Id') ?? randomUUID();
+    const result = await runOrchestrator(query, emitter, budget, depth, { sessionId, requestId });
+    res.json({ result, requestId });
   }));
 
   const weather = AGENTS.find((a) => a.name === 'WeatherBot')!;
@@ -154,6 +222,7 @@ export function createApp() {
   const translate = AGENTS.find((a) => a.name === 'TranslateBot')!;
   const research = AGENTS.find((a) => a.name === 'DeepResearch')!;
   const coding = AGENTS.find((a) => a.name === 'CodingAgent')!;
+  const sovereign = AGENTS.find((a) => a.name === 'SovereignSpecialist')!;
 
   app.post(
     weather.path,
@@ -265,6 +334,20 @@ export function createApp() {
       resourcePath: coding.path,
     }),
     asyncHandler(handlers.coding),
+  );
+
+  app.post(
+    sovereign.path,
+    x402Required({
+      priceAtomic: sovereign.priceAtomic,
+      tokenKind: sovereign.token,
+      snsDomain: sovereign.domain,
+      recipientWallet: getAgentWalletForDomain(sovereign.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: sovereign.description,
+      resourcePath: sovereign.path,
+    }),
+    asyncHandler(handlers.sovereign),
   );
 
   app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
