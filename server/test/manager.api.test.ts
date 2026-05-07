@@ -37,7 +37,7 @@ describe('manager and registry', () => {
   it('registry returns all specialists in expected shape', () => {
     const registry = getAgentRegistry();
     assert.equal(Array.isArray(registry), true);
-    assert.equal(registry.length, 8);
+    assert.equal(registry.length, 9);
     assert.equal(typeof registry[0].name, 'string');
     assert.equal(typeof registry[0].domain, 'string');
     assert.equal(typeof registry[0].priceDisplay, 'string');
