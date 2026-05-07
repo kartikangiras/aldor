@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import bs58 from 'bs58';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { createPaidAxios, PaymentSigner } from '../../sdk/src/index.js';
 
@@ -44,8 +45,13 @@ function parseArgs(argv: string[]): CliFlags {
 
 function parseSecret(secret: string): Uint8Array {
   if (!secret) return Keypair.generate().secretKey;
-  if (secret.trim().startsWith('[')) return Uint8Array.from(JSON.parse(secret));
-  return Uint8Array.from(Buffer.from(secret, 'base64'));
+  const trimmed = secret.trim();
+  if (trimmed.startsWith('[')) return Uint8Array.from(JSON.parse(trimmed));
+  try {
+    return bs58.decode(trimmed);
+  } catch {
+    return Uint8Array.from(Buffer.from(trimmed, 'base64'));
+  }
 }
 
 function formatStep(event: StepEvent): string {
