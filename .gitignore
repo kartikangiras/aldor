@@ -3,3 +3,4 @@ server/.env.example
 node_modules
 target
 dist
+scripts
