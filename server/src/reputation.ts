@@ -1,11 +1,17 @@
 import { Connection, PublicKey, TransactionInstruction, Transaction, Keypair, sendAndConfirmTransaction } from '@solana/web3.js';
 import { createHash } from 'node:crypto';
+import bs58 from 'bs58';
 import { serverConfig } from './config.js';
 
 function parsePayerSecret(secret: string): Uint8Array {
   if (!secret) return Keypair.generate().secretKey;
-  if (secret.trim().startsWith('[')) return Uint8Array.from(JSON.parse(secret));
-  return Uint8Array.from(Buffer.from(secret, 'base64'));
+  const trimmed = secret.trim();
+  if (trimmed.startsWith('[')) return Uint8Array.from(JSON.parse(trimmed));
+  try {
+    return bs58.decode(trimmed);
+  } catch {
+    return Uint8Array.from(Buffer.from(trimmed, 'base64'));
+  }
 }
 
 function discriminator(name: string): Buffer {

@@ -61,7 +61,11 @@ export function createApp() {
 
     const missingEnv: string[] = [];
     if (!process.env.SOLANA_RPC_URL) missingEnv.push('SOLANA_RPC_URL');
-    if (!process.env.PALM_USD_MINT) missingEnv.push('PALM_USD_MINT');
+    const cluster = (process.env.SOLANA_CLUSTER ?? 'devnet').toLowerCase() === 'mainnet' ? 'mainnet' : 'devnet';
+    const hasPalmMint = Boolean(process.env.PALM_USD_MINT)
+      || (cluster === 'mainnet' && Boolean(process.env.PALM_USD_MINT_MAINNET))
+      || (cluster === 'devnet' && Boolean(process.env.PALM_USD_MINT_DEVNET));
+    if (!hasPalmMint) missingEnv.push('PALM_USD_MINT (or PALM_USD_MINT_DEVNET/MAINNET)');
     if (serverConfig.paymentMode === 'server' && !process.env.ALDOR_PAYER_SECRET_KEY) {
       missingEnv.push('ALDOR_PAYER_SECRET_KEY');
     }
@@ -166,8 +170,15 @@ export function createApp() {
       }
     })();
     const addresses = AGENTS.map((agent) => walletMap[agent.domain]).filter((v): v is string => Boolean(v));
-    const txs = await getRecentTransactions(addresses);
-    res.json({ items: txs });
+    try {
+      const txs = await getRecentTransactions(addresses);
+      res.json({ items: txs });
+    } catch (error: any) {
+      res.status(503).json({
+        error: 'COVALENT_UNAVAILABLE',
+        message: error?.message ?? 'Covalent request failed',
+      });
+    }
   }));
 
   app.get('/api/analytics/palmusd-circulation', asyncHandler(async (_req, res) => {
@@ -182,8 +193,19 @@ export function createApp() {
       res.status(400).json({ error: 'INVALID_REQUEST' });
       return;
     }
-    const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress);
-    res.json({ payment: urlOrId });
+    if (!process.env.DODO_API_KEY || process.env.DODO_API_KEY === 'replace_me') {
+      res.status(503).json({ error: 'DODO_UNAVAILABLE', message: 'DODO_API_KEY is not configured.' });
+      return;
+    }
+    try {
+      const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress);
+      res.json({ payment: urlOrId });
+    } catch (error: any) {
+      res.status(503).json({
+        error: 'DODO_UNAVAILABLE',
+        message: error?.message ?? 'Dodo request failed',
+      });
+    }
   }));
 
   app.post('/api/dodo/offramp', asyncHandler(async (req, res) => {
@@ -194,8 +216,19 @@ export function createApp() {
       res.status(400).json({ error: 'INVALID_REQUEST' });
       return;
     }
-    const invoiceId = await offRampEarnings(agentAddress, amountStablecoin, destinationDetails);
-    res.json({ invoiceId });
+    if (!process.env.DODO_API_KEY || process.env.DODO_API_KEY === 'replace_me') {
+      res.status(503).json({ error: 'DODO_UNAVAILABLE', message: 'DODO_API_KEY is not configured.' });
+      return;
+    }
+    try {
+      const invoiceId = await offRampEarnings(agentAddress, amountStablecoin, destinationDetails);
+      res.json({ invoiceId });
+    } catch (error: any) {
+      res.status(503).json({
+        error: 'DODO_UNAVAILABLE',
+        message: error?.message ?? 'Dodo request failed',
+      });
+    }
   }));
 
   app.post('/api/agent/query', asyncHandler(async (req, res) => {

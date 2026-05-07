@@ -7,7 +7,11 @@ export function assertStartupConfig(env: NodeJS.ProcessEnv = process.env): void 
   const issues: string[] = [];
 
   if (!env.SOLANA_RPC_URL) issues.push('Missing SOLANA_RPC_URL');
-  if (!env.PALM_USD_MINT) issues.push('Missing PALM_USD_MINT');
+  const cluster = (env.SOLANA_CLUSTER ?? 'devnet').toLowerCase() === 'mainnet' ? 'mainnet' : 'devnet';
+  const hasPalmMint = Boolean(env.PALM_USD_MINT)
+    || (cluster === 'mainnet' && Boolean(env.PALM_USD_MINT_MAINNET))
+    || (cluster === 'devnet' && Boolean(env.PALM_USD_MINT_DEVNET));
+  if (!hasPalmMint) issues.push('Missing PALM_USD_MINT (or PALM_USD_MINT_DEVNET/MAINNET)');
 
   if (serverConfig.paymentMode === 'server') {
     if (!env.ALDOR_PAYER_SECRET_KEY) {

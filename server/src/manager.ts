@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import bs58 from 'bs58';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { createPaidAxios, PaymentSigner, resolveRecipientStealthKey } from '../../sdk/src/index.js';
 import { AGENTS, byName } from './agents.js';
@@ -243,10 +244,15 @@ function parsePayerSecret(secret: string): Uint8Array {
   if (!secret) {
     return Keypair.generate().secretKey;
   }
-  if (secret.trim().startsWith('[')) {
-    return Uint8Array.from(JSON.parse(secret));
+  const trimmed = secret.trim();
+  if (trimmed.startsWith('[')) {
+    return Uint8Array.from(JSON.parse(trimmed));
   }
-  return Keypair.fromSecretKey(Uint8Array.from(Buffer.from(secret, 'base64'))).secretKey;
+  try {
+    return bs58.decode(trimmed);
+  } catch {
+    return Uint8Array.from(Buffer.from(trimmed, 'base64'));
+  }
 }
 
 function chooseAgent(agentName: string): AgentDefinition {
