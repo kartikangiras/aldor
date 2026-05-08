@@ -5,17 +5,26 @@ import type { MiddlewareConfig, PaymentProofV1 } from './eventtypes.js';
 import { verifyUmbraTransfer } from '../../sdk/src/umbra.js';
 import { getUmbraSecretForDomain } from './umbra.js';
 import { fetchRegistryAgentByDomain, getStealthKeyForDomain } from './registry.js';
+import { resolveNetworkConfig, type PerRequestNetworkConfig } from './network.js';
 
 function parsedInfo(ix: any): any {
   return ix?.parsed?.info ?? null;
 }
 
-export async function verifyPayment(proof: PaymentProofV1, cfg: MiddlewareConfig): Promise<boolean> {
+export async function verifyPayment(
+  proof: PaymentProofV1,
+  cfg: MiddlewareConfig,
+  networkHint?: string,
+): Promise<boolean> {
   if (serverConfig.mockPayments) {
     return true;
   }
 
-  const connection = new Connection(serverConfig.solanaRpcUrl, 'confirmed');
+  const netConfig: PerRequestNetworkConfig = networkHint
+    ? resolveNetworkConfig(networkHint)
+    : { solanaRpcUrl: serverConfig.solanaRpcUrl, solanaCluster: serverConfig.solanaCluster, palmUsdMint: serverConfig.palmUsdMint, covalentChain: 'solana-devnet', explorerCluster: '?cluster=devnet' };
+
+  const connection = new Connection(netConfig.solanaRpcUrl, 'confirmed');
   if (serverConfig.umbraEnabled && cfg.tokenKind === 'PALM_USD') {
     const receiverSecretKey = getUmbraSecretForDomain(cfg.snsDomain);
     if (!receiverSecretKey) {
@@ -32,7 +41,7 @@ export async function verifyPayment(proof: PaymentProofV1, cfg: MiddlewareConfig
       connection,
       receiverSecretKey,
       stealthPublicKey: stealthKey,
-      assetMint: new PublicKey(serverConfig.palmUsdMint),
+      assetMint: new PublicKey(netConfig.palmUsdMint),
       expectedAmount: BigInt(cfg.priceAtomic),
       signature: proof.umbraSignature,
       ephemeralKey: proof.umbraEphemeralKey,
@@ -66,7 +75,7 @@ export async function verifyPayment(proof: PaymentProofV1, cfg: MiddlewareConfig
     return false;
   }
 
-  const mint = new PublicKey(serverConfig.palmUsdMint);
+  const mint = new PublicKey(netConfig.palmUsdMint);
   const recipientAta = cfg.recipientWallet
     ? getAssociatedTokenAddressSync(mint, new PublicKey(cfg.recipientWallet)).toBase58()
     : null;

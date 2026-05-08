@@ -63,7 +63,7 @@ export interface X402Challenge {
   recipient: string;
   amount: string;
   asset: string;
-  network: 'solana-devnet';
+  network: 'solana-devnet' | 'solana-mainnet';
   expiresAt: number;
   description: string;
   resource: string;

@@ -1,9 +1,11 @@
 import { AGENTS } from './agents.js';
+import { networkFromRequest } from './network.js';
 
 interface RegistryLikeAgent {
   snsDomain: string;
   name?: string;
   category?: string;
+  description?: string;
   priceLamports?: string;
   priceMicroStablecoin?: number | string;
   reputation?: number | string;
@@ -36,11 +38,14 @@ function covalentBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
   return env.COVALENT_BASE_URL ?? 'https://api.covalenthq.com/v1';
 }
 
-function covalentChain(env: NodeJS.ProcessEnv = process.env): string {
+function covalentChain(networkHint?: string, env: NodeJS.ProcessEnv = process.env): string {
+  if (networkHint) {
+    return networkHint === 'mainnet' ? 'solana-mainnet' : 'solana-devnet';
+  }
   return env.COVALENT_SOLANA_CHAIN ?? 'solana-devnet';
 }
 
-async function covalentGet(path: string, env: NodeJS.ProcessEnv = process.env): Promise<any> {
+async function covalentGet(path: string, networkHint?: string, env: NodeJS.ProcessEnv = process.env): Promise<any> {
   const apiKey = env.COVALENT_API_KEY;
   if (!apiKey) {
     throw new Error('COVALENT_API_KEY is not configured.');
@@ -50,22 +55,34 @@ async function covalentGet(path: string, env: NodeJS.ProcessEnv = process.env): 
   const url = `${base}${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(apiKey)}`;
   const response = await fetch(url);
   if (!response.ok) {
+    // Covalent returns 501 for endpoints not supported on Solana chains (e.g. transactions_v3).
+    // Treat these as graceful empty responses rather than hard errors so the UI can
+    // fall back to its demo-data path instead of showing a 503.
+    if (response.status === 501) {
+      return null;
+    }
     throw new Error(`Covalent request failed with status ${response.status}`);
   }
-  return response.json();
+  const json = await response.json();
+  // Covalent sometimes returns HTTP 200 with error:true for unsupported chains.
+  if (json?.error === true) {
+    return null;
+  }
+  return json;
 }
 
 export async function getStablecoinBalanceForAddress(
   address: string,
   stablecoinMint: string,
+  networkHint?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<AgentBalanceInfo> {
   if (!covalentEnabled(env)) {
     return { address, stablecoinBalance: '0' };
   }
 
-  const chain = covalentChain(env);
-  const payload = await covalentGet(`/${chain}/address/${address}/balances_v2/`, env);
+  const chain = covalentChain(networkHint, env);
+  const payload = await covalentGet(`/${chain}/address/${address}/balances_v2/`, networkHint, env);
   const items = payload?.data?.items;
   const match = Array.isArray(items)
     ? items.find((item: any) => {
@@ -83,25 +100,33 @@ export async function getStablecoinBalanceForAddress(
 
 export async function getRecentTransactions(
   addresses: string[],
+  networkHint?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<RecentTxInfo[]> {
   if (!covalentEnabled(env)) {
     return [];
   }
 
-  const chain = covalentChain(env);
+  const chain = covalentChain(networkHint, env);
   const all: RecentTxInfo[] = [];
-  for (const address of addresses) {
-    const payload = await covalentGet(`/${chain}/address/${address}/transactions_v3/?page-size=5`, env);
-    const items = payload?.data?.items;
-    if (!Array.isArray(items)) continue;
-    for (const item of items.slice(0, 5)) {
-      all.push({
-        address,
-        hash: String(item?.tx_hash ?? ''),
-        timestamp: String(item?.block_signed_at ?? ''),
-        kind: String(item?.successful ? 'successful' : 'unknown'),
-      });
+  for (const address of addresses.slice(0, 3)) {
+    try {
+      // Note: transactions_v3 is NOT supported on solana-mainnet/devnet by Covalent.
+      // covalentGet returns null for 501/unsupported — we skip gracefully.
+      const payload = await covalentGet(`/${chain}/address/${address}/transactions_v3/?page-size=5`, networkHint, env);
+      const items = payload?.data?.items;
+      if (!Array.isArray(items)) continue;
+      for (const item of items.slice(0, 5)) {
+        all.push({
+          address,
+          hash: String(item?.tx_hash ?? ''),
+          timestamp: String(item?.block_signed_at ?? ''),
+          kind: String(item?.successful ? 'successful' : 'unknown'),
+        });
+      }
+    } catch {
+      // Skip addresses that fail individually
+      continue;
     }
   }
 
@@ -111,6 +136,7 @@ export async function getRecentTransactions(
 
 export async function getAgentRegistryEnriched(
   stablecoinMint: string,
+  networkHint?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<Array<Record<string, unknown>>> {
   return enrichAgentsWithBalances(AGENTS.map((agent) => ({
@@ -122,12 +148,13 @@ export async function getAgentRegistryEnriched(
     isRecursive: agent.recursive,
     isActive: true,
     capabilities: [agent.category],
-  })), stablecoinMint, env);
+  })), stablecoinMint, networkHint, env);
 }
 
 export async function enrichAgentsWithBalances(
   agents: RegistryLikeAgent[],
   stablecoinMint: string,
+  networkHint?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<Array<Record<string, unknown>>> {
   const walletMap = (() => {
@@ -143,20 +170,21 @@ export async function enrichAgentsWithBalances(
   const balances = await Promise.all(
     agents.map((agent) => {
       const address = agent.walletAddress ?? agent.owner ?? walletMap[agent.snsDomain] ?? agent.snsDomain;
-      return getStablecoinBalanceForAddress(address, stablecoinMint, env).catch(() => ({
+      return getStablecoinBalanceForAddress(address, stablecoinMint, networkHint, env).catch(() => ({
         address,
         stablecoinBalance: '0',
       }));
     }),
   );
 
-  return agents.map((agent) => {
+    return agents.map((agent) => {
     const address = agent.walletAddress ?? agent.owner ?? walletMap[agent.snsDomain] ?? agent.snsDomain;
     const balance = balances.find((b) => b.address === address);
     return {
       snsDomain: agent.snsDomain,
       name: agent.name ?? '',
       category: agent.category ?? '',
+      description: agent.description ?? '',
       priceMicroStablecoin: agent.priceMicroStablecoin ?? agent.priceLamports ?? '0',
       reputation: agent.reputation ?? agent.reputationBps ?? '0',
       isRecursive: agent.isRecursive ?? false,

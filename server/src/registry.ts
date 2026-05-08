@@ -51,7 +51,7 @@ function getProgramId(env: NodeJS.ProcessEnv): PublicKey | null {
   }
 }
 
-export async function fetchRegistryAgents(env: NodeJS.ProcessEnv = process.env): Promise<RegistryAgentEntry[]> {
+export async function fetchRegistryAgents(env: NodeJS.ProcessEnv = process.env, rpcUrl?: string): Promise<RegistryAgentEntry[]> {
   const programId = getProgramId(env);
   if (!programId) {
     const walletMap = getAgentWalletMap(env);
@@ -66,6 +66,7 @@ export async function fetchRegistryAgents(env: NodeJS.ProcessEnv = process.env):
       isActive: true,
       isRecursive: agent.recursive,
       capabilities: [agent.category],
+      description: agent.description,
       owner: walletMap[agent.domain] ?? '',
       registeredAt: '0',
       umbraStealthPublicKey: getStealthKeyForDomain(agent.domain, env),
@@ -73,7 +74,7 @@ export async function fetchRegistryAgents(env: NodeJS.ProcessEnv = process.env):
     }));
   }
 
-  const connection = new Connection(serverConfig.solanaRpcUrl, 'confirmed');
+  const connection = new Connection(rpcUrl ?? serverConfig.solanaRpcUrl, 'confirmed');
   const coder = new BorshAccountsCoder(idl as Idl);
   const discriminator = coder.accountDiscriminator('AgentAccount');
 

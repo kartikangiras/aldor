@@ -17,6 +17,8 @@ import { getPaymentStats, listPayments } from './ledger.js';
 import { fetchRegistryAgents } from './registry.js';
 import { seedRegistryAgents } from './registrySeed.js';
 import { fetchPalmUsdCirculation } from './palmusd.js';
+import { runIntegrationDiagnostics } from './diagnostics.js';
+import { networkFromRequest } from './network.js';
 
 function asyncHandler<T extends express.RequestHandler>(fn: T): express.RequestHandler {
   return (req, res, next) => {
@@ -33,15 +35,22 @@ export function createApp() {
 
   app.use(express.json());
 
+  // Network middleware: attaches per-request network config
+  app.use((req, _res, next) => {
+    (req as any).networkConfig = networkFromRequest(req);
+    next();
+  });
+
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
 
-  app.get('/api/payment/config', (_req, res) => {
+  app.get('/api/payment/config', (req, res) => {
+    const netConfig = networkFromRequest(req);
     res.json({
       paymentMode: serverConfig.paymentMode,
-      network: serverConfig.solanaCluster === 'mainnet' ? 'solana-mainnet' : 'solana-devnet',
-      palmUsdMint: serverConfig.palmUsdMint,
+      network: netConfig.solanaCluster === 'mainnet' ? 'solana-mainnet' : 'solana-devnet',
+      palmUsdMint: netConfig.palmUsdMint,
       umbraEnabled: serverConfig.umbraEnabled,
     });
   });
@@ -112,9 +121,10 @@ export function createApp() {
     });
   });
 
-  app.get('/api/agents', asyncHandler(async (_req, res) => {
-    const registryAgents = await fetchRegistryAgents();
-    const enriched = await enrichAgentsWithBalances(registryAgents, serverConfig.palmUsdMint);
+  app.get('/api/agents', asyncHandler(async (req, res) => {
+    const netConfig = networkFromRequest(req);
+    const registryAgents = await fetchRegistryAgents(process.env, netConfig.solanaRpcUrl);
+    const enriched = await enrichAgentsWithBalances(registryAgents, netConfig.palmUsdMint, netConfig.solanaCluster);
     res.json(enriched);
   }));
 
@@ -131,8 +141,9 @@ export function createApp() {
     })) });
   });
 
-  app.get('/api/registry', (_req, res) => {
-    fetchRegistryAgents().then((agents) => res.json(agents)).catch((error: any) => {
+  app.get('/api/registry', (req, res) => {
+    const netConfig = networkFromRequest(req);
+    fetchRegistryAgents(process.env, netConfig.solanaRpcUrl).then((agents) => res.json(agents)).catch((error: any) => {
       res.status(500).json({ error: 'REGISTRY_LOAD_FAILED', detail: error?.message ?? String(error) });
     });
   });
@@ -159,7 +170,8 @@ export function createApp() {
     res.json(getPaymentStats());
   });
 
-  app.get('/api/analytics/recent-transactions', asyncHandler(async (_req, res) => {
+  app.get('/api/analytics/recent-transactions', asyncHandler(async (req, res) => {
+    const netConfig = networkFromRequest(req);
     const walletMap = (() => {
       const raw = process.env.ALDOR_AGENT_WALLET_MAP;
       if (!raw) return {} as Record<string, string>;
@@ -171,7 +183,7 @@ export function createApp() {
     })();
     const addresses = AGENTS.map((agent) => walletMap[agent.domain]).filter((v): v is string => Boolean(v));
     try {
-      const txs = await getRecentTransactions(addresses);
+      const txs = await getRecentTransactions(addresses, netConfig.solanaCluster);
       res.json({ items: txs });
     } catch (error: any) {
       res.status(503).json({
@@ -186,9 +198,15 @@ export function createApp() {
     res.json(circulation);
   }));
 
+  app.get('/api/integrations/diagnostics', asyncHandler(async (req, res) => {
+    const diagnostics = await runIntegrationDiagnostics(process.env);
+    res.status(diagnostics.ok ? 200 : 503).json(diagnostics);
+  }));
+
   app.post('/api/dodo/fund', asyncHandler(async (req, res) => {
     const amountUsd = Number(req.body?.amountUsd ?? 0);
     const walletAddress = String(req.body?.walletAddress ?? '');
+    const customerData = req.body?.customerData ?? { email: 'guest@example.com', name: 'Guest User', countryCode: 'US' };
     if (!Number.isFinite(amountUsd) || amountUsd <= 0 || !walletAddress) {
       res.status(400).json({ error: 'INVALID_REQUEST' });
       return;
@@ -198,7 +216,7 @@ export function createApp() {
       return;
     }
     try {
-      const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress);
+      const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress, customerData);
       res.json({ payment: urlOrId });
     } catch (error: any) {
       res.status(503).json({
@@ -243,7 +261,8 @@ export function createApp() {
 
     const budget = Number(req.body?.budget ?? req.header('X-Aldor-Budget-Remaining') ?? 0.01);
     const requestId = req.header('X-Aldor-Request-Id') ?? randomUUID();
-    const result = await runOrchestrator(query, emitter, budget, depth, { sessionId, requestId });
+    const netConfig = networkFromRequest(req);
+    const result = await runOrchestrator(query, emitter, budget, depth, { sessionId, requestId }, netConfig.solanaCluster);
     res.json({ result, requestId });
   }));
 
@@ -381,6 +400,142 @@ export function createApp() {
       resourcePath: sovereign.path,
     }),
     asyncHandler(handlers.sovereign),
+  );
+
+  const dataAnalyst = AGENTS.find((a) => a.name === 'DataAnalyst')!;
+  const contractAuditor = AGENTS.find((a) => a.name === 'ContractAuditor')!;
+  const defiStrategist = AGENTS.find((a) => a.name === 'DeFiStrategist')!;
+  const imageGenerator = AGENTS.find((a) => a.name === 'ImageGenerator')!;
+  const marketOracle = AGENTS.find((a) => a.name === 'MarketOracle')!;
+  const legalAdvisor = AGENTS.find((a) => a.name === 'LegalAdvisor')!;
+  const socialMediaBot = AGENTS.find((a) => a.name === 'SocialMediaBot')!;
+  const tradingBot = AGENTS.find((a) => a.name === 'TradingBot')!;
+  const medicalAdvisor = AGENTS.find((a) => a.name === 'MedicalAdvisor')!;
+
+  app.post(
+    dataAnalyst.path,
+    x402Required({
+      priceAtomic: dataAnalyst.priceAtomic,
+      tokenKind: dataAnalyst.token,
+      snsDomain: dataAnalyst.domain,
+      recipientWallet: getAgentWalletForDomain(dataAnalyst.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: dataAnalyst.description,
+      resourcePath: dataAnalyst.path,
+    }),
+    asyncHandler(handlers.dataAnalyst),
+  );
+
+  app.post(
+    contractAuditor.path,
+    x402Required({
+      priceAtomic: contractAuditor.priceAtomic,
+      tokenKind: contractAuditor.token,
+      snsDomain: contractAuditor.domain,
+      recipientWallet: getAgentWalletForDomain(contractAuditor.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: contractAuditor.description,
+      resourcePath: contractAuditor.path,
+    }),
+    asyncHandler(handlers.contractAuditor),
+  );
+
+  app.post(
+    defiStrategist.path,
+    x402Required({
+      priceAtomic: defiStrategist.priceAtomic,
+      tokenKind: defiStrategist.token,
+      snsDomain: defiStrategist.domain,
+      recipientWallet: getAgentWalletForDomain(defiStrategist.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: defiStrategist.description,
+      resourcePath: defiStrategist.path,
+    }),
+    asyncHandler(handlers.defiStrategist),
+  );
+
+  app.post(
+    imageGenerator.path,
+    x402Required({
+      priceAtomic: imageGenerator.priceAtomic,
+      tokenKind: imageGenerator.token,
+      snsDomain: imageGenerator.domain,
+      recipientWallet: getAgentWalletForDomain(imageGenerator.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: imageGenerator.description,
+      resourcePath: imageGenerator.path,
+    }),
+    asyncHandler(handlers.imageGenerator),
+  );
+
+  app.post(
+    marketOracle.path,
+    x402Required({
+      priceAtomic: marketOracle.priceAtomic,
+      tokenKind: marketOracle.token,
+      snsDomain: marketOracle.domain,
+      recipientWallet: getAgentWalletForDomain(marketOracle.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: marketOracle.description,
+      resourcePath: marketOracle.path,
+    }),
+    asyncHandler(handlers.marketOracle),
+  );
+
+  app.post(
+    legalAdvisor.path,
+    x402Required({
+      priceAtomic: legalAdvisor.priceAtomic,
+      tokenKind: legalAdvisor.token,
+      snsDomain: legalAdvisor.domain,
+      recipientWallet: getAgentWalletForDomain(legalAdvisor.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: legalAdvisor.description,
+      resourcePath: legalAdvisor.path,
+    }),
+    asyncHandler(handlers.legalAdvisor),
+  );
+
+  app.post(
+    socialMediaBot.path,
+    x402Required({
+      priceAtomic: socialMediaBot.priceAtomic,
+      tokenKind: socialMediaBot.token,
+      snsDomain: socialMediaBot.domain,
+      recipientWallet: getAgentWalletForDomain(socialMediaBot.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: socialMediaBot.description,
+      resourcePath: socialMediaBot.path,
+    }),
+    asyncHandler(handlers.socialMediaBot),
+  );
+
+  app.post(
+    tradingBot.path,
+    x402Required({
+      priceAtomic: tradingBot.priceAtomic,
+      tokenKind: tradingBot.token,
+      snsDomain: tradingBot.domain,
+      recipientWallet: getAgentWalletForDomain(tradingBot.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: tradingBot.description,
+      resourcePath: tradingBot.path,
+    }),
+    asyncHandler(handlers.tradingBot),
+  );
+
+  app.post(
+    medicalAdvisor.path,
+    x402Required({
+      priceAtomic: medicalAdvisor.priceAtomic,
+      tokenKind: medicalAdvisor.token,
+      snsDomain: medicalAdvisor.domain,
+      recipientWallet: getAgentWalletForDomain(medicalAdvisor.domain),
+      paymentMode: serverConfig.paymentMode,
+      description: medicalAdvisor.description,
+      resourcePath: medicalAdvisor.path,
+    }),
+    asyncHandler(handlers.medicalAdvisor),
   );
 
   app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

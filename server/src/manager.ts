@@ -5,6 +5,7 @@ import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { createPaidAxios, PaymentSigner, resolveRecipientStealthKey } from '../../sdk/src/index.js';
 import { AGENTS, byName } from './agents.js';
 import { serverConfig } from './config.js';
+import { resolveNetworkConfig } from './network.js';
 import type { AgentDefinition, StepEvent } from './eventtypes.js';
 import { recordJobOutcomeOnChain } from './reputation.js';
 import { runQvacEmbedding } from './qvac.js';
@@ -269,10 +270,19 @@ export async function runOrchestrator(
   budget = 0.01,
   depth = 0,
   context: OrchestratorContext = {},
+  networkHint?: string,
 ): Promise<string> {
   const requestId = context.requestId ?? randomUUID();
   const runJobId = randomUUID();
   const parentJobId = context.parentJobId;
+
+  const netConfig = networkHint ? resolveNetworkConfig(networkHint) : {
+    solanaRpcUrl: serverConfig.solanaRpcUrl,
+    solanaCluster: serverConfig.solanaCluster,
+    palmUsdMint: serverConfig.palmUsdMint,
+    covalentChain: 'solana-devnet',
+    explorerCluster: '?cluster=devnet',
+  };
 
   emit(emitter, {
     type: 'MANAGER_PLANNING',
@@ -300,9 +310,9 @@ export async function runOrchestrator(
   const payerSecret = parsePayerSecret(serverConfig.payerSecretKey);
   const payerPublicKey = Keypair.fromSecretKey(payerSecret).publicKey.toBase58();
   const signer = new PaymentSigner({
-    connection: new Connection(serverConfig.solanaRpcUrl, 'confirmed'),
+    connection: new Connection(netConfig.solanaRpcUrl, 'confirmed'),
     keypairSecretKey: payerSecret,
-    palmUsdMint: new PublicKey(serverConfig.palmUsdMint),
+    palmUsdMint: new PublicKey(netConfig.palmUsdMint),
     registryProgramId:
       serverConfig.aldorProgramId && serverConfig.aldorProgramId !== '11111111111111111111111111111111'
         ? new PublicKey(serverConfig.aldorProgramId)
@@ -340,7 +350,7 @@ export async function runOrchestrator(
     });
     let resolved: string;
     try {
-      resolved = await resolveRecipientStealthKey(agent.domain, new Connection(serverConfig.solanaRpcUrl, 'confirmed'));
+      resolved = await resolveRecipientStealthKey(agent.domain, new Connection(netConfig.solanaRpcUrl, 'confirmed'));
     } catch (error: any) {
       emit(emitter, {
         type: 'SPECIALIST_FAILED',

@@ -3,10 +3,11 @@ import type { MiddlewareConfig, PaymentProofV1, X402Challenge } from './eventtyp
 import { serverConfig } from './config.js';
 import { verifyPayment as verifyPaymentDefault } from './facilitator.js';
 import { recordPayment } from './ledger.js';
+import { networkFromRequest } from './network.js';
 
 const MAX_DEPTH = 3;
 
-type VerifyFn = (proof: PaymentProofV1, cfg: MiddlewareConfig) => Promise<boolean>;
+type VerifyFn = (proof: PaymentProofV1, cfg: MiddlewareConfig, networkHint?: string) => Promise<boolean>;
 
 function readDepth(req: Request): number {
   const raw = req.header('X-Aldor-Max-Depth');
@@ -15,13 +16,14 @@ function readDepth(req: Request): number {
 }
 
 export function buildChallenge(req: Request, cfg: MiddlewareConfig): X402Challenge {
-  const mint = cfg.tokenKind === 'SOL' ? 'SOL' : serverConfig.palmUsdMint;
+  const netConfig = networkFromRequest(req);
+  const mint = cfg.tokenKind === 'SOL' ? 'SOL' : netConfig.palmUsdMint;
   return {
     x402Version: 1,
     recipient: cfg.snsDomain,
     amount: String(cfg.priceAtomic),
     asset: mint,
-    network: 'solana-devnet',
+    network: netConfig.solanaCluster === 'mainnet' ? 'solana-mainnet' : 'solana-devnet',
     expiresAt: Date.now() + 60_000,
     description: cfg.description,
     resource: `${serverConfig.serverBaseUrl}${cfg.resourcePath}`,
@@ -40,6 +42,9 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
       return;
     }
 
+    const netConfig = networkFromRequest(req);
+    const networkHint = netConfig.solanaCluster;
+
     const signature = req.header('X-Aldor-Payment-Signature') ?? req.header('X-Payment-Signature');
     const ephemeralKey = req.header('X-Aldor-Ephemeral-Key') ?? req.header('X-Aldor-Payment-Ephemeral');
     if (!signature) {
@@ -53,7 +58,7 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
       payer: req.header('X-Aldor-Payer') ?? undefined,
       timestamp: Date.now(),
     };
-    const valid = await verifyFn(proof, cfg);
+    const valid = await verifyFn(proof, cfg, networkHint);
     if (!valid) {
       res.status(402).json({ error: 'PAYMENT_INVALID' });
       return;
@@ -92,6 +97,7 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
         'x-aldor-job-id': jobId ?? '',
         'x-aldor-parent-job-id': parentJobId ?? '',
         'x-aldor-session': sessionId ?? '',
+        'x-aldor-network': networkHint,
       },
     });
 
@@ -103,6 +109,7 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
       requestId,
       jobId,
       parentJobId,
+      network: networkHint,
     };
 
     next();

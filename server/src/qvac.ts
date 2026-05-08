@@ -8,7 +8,8 @@ interface QvacLlmState {
 
 interface QvacEmbedState {
   modelId: string;
-  embed: (args: { modelId: string; input: string | string[] }) => Promise<number[] | number[][]>;
+  // Key fix: SDK expects 'text', not 'input'
+  embed: (args: { modelId: string; text: string | string[] }) => Promise<{ embedding: number[] | number[][] }>;
 }
 
 let llmState: QvacLlmState | null = null;
@@ -18,120 +19,92 @@ function isEnabled(flag: string): boolean {
   return (process.env[flag] ?? 'false').toLowerCase() === 'true';
 }
 
-async function loadLlmModule(): Promise<any> {
-  try {
-    return await import('@qvac/llm-llamacpp');
-  } catch {
-    return await import('@qvac/sdk');
-  }
-}
-
-async function loadEmbedModule(): Promise<any> {
-  try {
-    return await import('@qvac/embed-llamacpp');
-  } catch {
-    return await import('@qvac/sdk');
-  }
-}
-
-function pickExport<T extends keyof any>(mod: any, key: T): any {
-  return mod?.[key] ?? mod?.default?.[key];
+// Helper to ensure we get the right export from the SDK or specific modules
+function pickExport(mod: any, key: string): any {
+  return mod?.[key] ?? mod?.default?.[key] ?? mod?.[key.toLowerCase()];
 }
 
 async function ensureLlmLoaded(): Promise<QvacLlmState> {
   if (llmState) return llmState;
-  const mod = await loadLlmModule();
+  
+  const mod = await import('@qvac/sdk');
   const loadModel = pickExport(mod, 'loadModel');
   const completion = pickExport(mod, 'completion');
   const unloadModel = pickExport(mod, 'unloadModel');
-  if (!loadModel || !completion) {
-    throw new Error('QVAC LLM module is missing loadModel or completion exports');
-  }
 
-  const modelSrc = process.env.QVAC_LLM_MODEL_SRC ?? pickExport(mod, 'LLAMA_3_2_1B_INST_Q4_0');
-  if (!modelSrc) {
-    throw new Error('QVAC_LLM_MODEL_SRC is required when LLAMA_3_2_1B_INST_Q4_0 is unavailable');
-  }
+  const modelSrc = process.env.QVAC_LLM_MODEL_SRC || mod.LLAMA_3_2_1B_INST_Q4_0;
 
   const modelId = await loadModel({
     modelSrc,
     modelType: 'llm',
+    modelConfig: {
+      gpuLayers: 99, // Offload to Macbook Metal GPU
+      device: 'gpu'
+    }
   });
 
-  llmState = {
-    modelId: String(modelId),
-    unload: unloadModel,
-    completion,
-  };
-
+  llmState = { modelId: String(modelId), unload: unloadModel, completion };
   return llmState;
 }
 
 async function ensureEmbedLoaded(): Promise<QvacEmbedState> {
   if (embedState) return embedState;
-  const mod = await loadEmbedModule();
+  
+  const mod = await import('@qvac/sdk');
   const loadModel = pickExport(mod, 'loadModel');
-  const embed = pickExport(mod, 'embed') ?? pickExport(mod, 'embedding') ?? pickExport(mod, 'embeddings');
-  if (!loadModel || !embed) {
-    throw new Error('QVAC embed module is missing loadModel or embed exports');
-  }
+  const embed = pickExport(mod, 'embed');
 
-  const modelSrc = process.env.QVAC_EMBED_MODEL_SRC ?? pickExport(mod, 'LLAMA_3_2_1B_INST_Q4_0');
-  if (!modelSrc) {
-    throw new Error('QVAC_EMBED_MODEL_SRC is required when default embed model is unavailable');
-  }
+  const modelSrc = process.env.QVAC_EMBED_MODEL_SRC || mod.GTE_LARGE_FP16;
 
   const modelId = await loadModel({
     modelSrc,
-    modelType: 'embed',
+    modelType: 'embeddings', // Fix: Must be 'embeddings'
+    modelConfig: {
+      gpuLayers: 99, // Required for real-time performance
+      device: 'gpu'
+    }
   });
 
-  embedState = {
-    modelId: String(modelId),
-    embed,
-  };
-
+  embedState = { modelId: String(modelId), embed };
   return embedState;
 }
 
-async function collectCompletion(output: any): Promise<string> {
-  if (!output) return '';
-  if (typeof output === 'string') return output;
-  if (typeof output.text === 'string') return output.text;
+export async function runQvacCompletion(prompt: string): Promise<string> {
 
-  const tokenStream = output.tokenStream;
-  if (tokenStream && typeof tokenStream[Symbol.asyncIterator] === 'function') {
-    let text = '';
-    for await (const token of tokenStream) {
-      text += String(token);
-    }
-    return text;
-  }
+if (!isEnabled('QVAC_LLM_ENABLED')) {
 
-  return '';
+throw new Error('QVAC_LLM_ENABLED is false');
+
 }
 
-export async function runQvacCompletion(prompt: string): Promise<string> {
-  if (!isEnabled('QVAC_LLM_ENABLED')) {
-    throw new Error('QVAC_LLM_ENABLED is false');
-  }
-  const state = await ensureLlmLoaded();
-  const history: LlmHistoryItem[] = [{ role: 'user', content: prompt }];
-  const output = await state.completion({ modelId: state.modelId, history, stream: true });
-  return collectCompletion(output);
+const state = await ensureLlmLoaded();
+
+const history: LlmHistoryItem[] = [{ role: 'user', content: prompt }];
+
+const output = await state.completion({ modelId: state.modelId, history, stream: true });
+
+return collectCompletion(output);
+
 }
 
 export async function runQvacEmbedding(texts: string[]): Promise<number[][]> {
   if (!isEnabled('QVAC_EMBED_ENABLED')) {
     throw new Error('QVAC_EMBED_ENABLED is false');
   }
+  
   const state = await ensureEmbedLoaded();
-  const output = await state.embed({ modelId: state.modelId, input: texts });
-  if (Array.isArray(output) && Array.isArray(output[0])) {
-    return output as number[][];
+  
+  // SDK returns an object { embedding: [...] }
+  const { embedding } = await state.embed({ 
+    modelId: state.modelId, 
+    text: texts // Fix: Key must be 'text'
+  });
+
+  if (Array.isArray(embedding) && Array.isArray(embedding[0])) {
+    return embedding as number[][];
   }
-  if (Array.isArray(output)) {
-    return [output as number[]];
+  if (Array.isArray(embedding)) {
+    return [embedding as number[]];
   }
   return [];
 }
@@ -143,3 +116,7 @@ export async function unloadQvacModels(): Promise<void> {
   llmState = null;
   embedState = null;
 }
+function collectCompletion(output: any): string | PromiseLike<string> {
+  throw new Error('Function not implemented.');
+}
+

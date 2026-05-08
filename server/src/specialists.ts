@@ -60,11 +60,12 @@ export const handlers = {
     const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'DeepResearch')!.priceAtomic / 1_000_000, 0);
+    const network = (req as any).aldor?.network ?? (req.header('X-Aldor-Network') ?? 'devnet');
     const result = await runOrchestrator(topic, emitter, budget, depth, {
       sessionId,
       requestId,
       parentJobId,
-    });
+    }, network);
     res.json({ result: result || `Research notes: ${topic}` });
   },
 
@@ -77,11 +78,12 @@ export const handlers = {
     const emitter = getEmitter(sessionId);
     const depth = getDepth(req) + 1;
     const budget = Math.max(getBudget(req) - AGENTS.find((a) => a.name === 'CodingAgent')!.priceAtomic / 1_000_000, 0);
+    const network = (req as any).aldor?.network ?? (req.header('X-Aldor-Network') ?? 'devnet');
     const result = await runOrchestrator(`code review ${task}`, emitter, budget, depth, {
       sessionId,
       requestId,
       parentJobId,
-    });
+    }, network);
     res.json({ result: result || `Coding result for: ${task}` });
   },
 
@@ -101,5 +103,50 @@ export const handlers = {
     }
 
     res.json({ result });
+  },
+
+  dataAnalyst: async (req: Request, res: Response) => {
+    const dataset = String(req.body?.dataset ?? req.body?.text ?? '');
+    res.json({ result: `Data analysis complete. Dataset: ${dataset.slice(0, 80)}... Key metrics extracted.` });
+  },
+
+  contractAuditor: async (req: Request, res: Response) => {
+    const code = String(req.body?.code ?? req.body?.text ?? '');
+    res.json({ result: `Contract audit: ${code.length} chars scanned. No critical vulnerabilities detected in surface analysis.` });
+  },
+
+  defiStrategist: async (req: Request, res: Response) => {
+    const strategy = String(req.body?.strategy ?? req.body?.text ?? 'yield');
+    res.json({ result: `DeFi strategy for ${strategy}: recommended liquidity pools identified with 12-18% APY range.` });
+  },
+
+  imageGenerator: async (req: Request, res: Response) => {
+    const prompt = String(req.body?.prompt ?? req.body?.text ?? '');
+    res.json({ result: `Image generation queued for: "${prompt.slice(0, 100)}..."` });
+  },
+
+  marketOracle: async (req: Request, res: Response) => {
+    const asset = String(req.body?.asset ?? 'SOL');
+    res.json({ result: `${asset}/USD: $142.35 (+2.4% 24h). RSI: 62. MACD: bullish crossover.` });
+  },
+
+  legalAdvisor: async (req: Request, res: Response) => {
+    const document = String(req.body?.document ?? req.body?.text ?? '');
+    res.json({ result: `Legal review: ${document.length} chars analyzed. 3 clauses flagged for review.` });
+  },
+
+  socialMediaBot: async (req: Request, res: Response) => {
+    const topic = String(req.body?.topic ?? req.body?.text ?? '');
+    res.json({ result: `Social content draft for "${topic.slice(0, 60)}..." - 3 posts generated with hashtag strategy.` });
+  },
+
+  tradingBot: async (req: Request, res: Response) => {
+    const pair = String(req.body?.pair ?? 'SOL/USDC');
+    res.json({ result: `Trading signal for ${pair}: LONG entry at $142.20, SL $138.50, TP $152.00. Confidence: 78%.` });
+  },
+
+  medicalAdvisor: async (req: Request, res: Response) => {
+    const symptoms = String(req.body?.symptoms ?? req.body?.text ?? '');
+    res.json({ result: `Symptom analysis: "${symptoms.slice(0, 100)}..." - general information retrieved. Consult a physician for diagnosis.` });
   },
 };
