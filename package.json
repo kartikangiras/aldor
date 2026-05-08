@@ -6,14 +6,20 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "anchor test",
-    "phase3:test": "MOCK_PAYMENTS=true SERVER_BASE_URL=http://127.0.0.1:3000 npm run build && mocha -t 120000 dist/server/test/**/*.test.js",
+    "phase3:test": "MOCK_PAYMENTS=true SERVER_BASE_URL=http://127.0.0.1:3002 npm run build && mocha -t 120000 dist/server/test/**/*.test.js",
     "server:start": "npm run build && node --env-file=server/.env dist/server/src/main.js",
     "agent:install": "npm --prefix agent install",
     "agent:check": "npm --prefix agent run check",
-    "agent:start": "npm --prefix agent run build && node agent/dist/index.js"
+    "agent:start": "npm --prefix agent run build && node agent/dist/index.js",
+    "frontend:install": "npm --prefix frontend install",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:start": "npm --prefix frontend run start"
   },
   "dependencies": {
+    "@bonfida/spl-name-service": "^3.0.21",
     "@coral-xyz/anchor": "^0.32.1",
+    "@qvac/sdk": "^0.10.2",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@umbra-privacy/sdk": "^4.0.0",
@@ -24,11 +30,6 @@
     "helmet": "^7.1.0",
     "morgan": "^1.10.0"
   },
-  "optionalDependencies": {
-    "@qvac/embed-llamacpp": "^0.1.0",
-    "@qvac/llm-llamacpp": "^0.1.0",
-    "@qvac/sdk": "^0.1.0"
-  },
   "devDependencies": {
     "@types/chai": "^5.2.2",
     "@types/cors": "^2.8.17",
@@ -36,6 +37,7 @@
     "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.9.9",
     "@types/node": "^24.3.0",
+    "@types/node-fetch": "^2.6.13",
     "@types/supertest": "^6.0.3",
     "chai": "^5.2.1",
     "mocha": "^11.7.1",

@@ -367,45 +367,200 @@ After the result is returned, the CLI prints: total amount spent (derived from a
 
 ### What This Phase Delivers
 
-The Aldor operator dashboard: a Next.js 14 App Router application that is a structural port of aldor's frontend. All seven aldor components are replicated and adapted for Solana/Umbra. Two new components are added: UmbraPrivacyProof (showing the privacy evidence for each payment) and CovalentDataPanel (replacing the Dune embed with Covalent-powered analytics). The mock payments badge replaces the Dune chart placeholder.
+The Aldor operator dashboard: a Next.js 14 App Router application that mirrors the current codebase. It renders live SSE-driven hiring events, shows Umbra privacy proofs, exposes a Dodo funding button, and surfaces Covalent-powered analytics through backend proxy endpoints.
 
 ### Page Routes
 
-**`/`** — Main dashboard. Header with wallet status. Four status badges. A 2×2 grid (EconomyGraph top-left, AgentChat top-right, TransactionLog bottom-left, ProtocolTrace bottom-right). Below the grid: UmbraPrivacyProof panel and CovalentDataPanel side by side. ToolCatalog at the bottom.
+**`/`** — Main dashboard. Header + status badges, a WalletInfo panel, a 2×2 grid (EconomyGraph, AgentChat, TransactionLog, ProtocolTrace), and a second row with ExecutionSteps, UmbraPrivacyProof, and CovalentDataPanel. ToolCatalog renders at the bottom.
 
-**`/agents`** — Full agent registry with Covalent-enriched metadata, job history, reputation history chart (from JobOutcomeRecorded events), and SNS domain links.
+**`/agents`** — Registry view backed by GET `/api/agents` with Covalent-enriched stablecoin balances. Shows SNS domain, category, price (Palm USD micro-units), reputation, capabilities list, and an optional wallet explorer link.
 
-**`/tools`** — Agent marketplace with cards for all eight specialists. Each card has a "Hire" button that opens a modal for direct queries and a "Request Off-ramp" button that calls the Dodo off-ramp utility.
+**`/tools`** — Marketplace backed by GET `/api/tools`. Each card supports a "Hire" modal (which deep-links back to `/` with query params) and a "Request Off-ramp" action that calls the Dodo off-ramp endpoint using the `NEXT_PUBLIC_AGENT_WALLET_MAP`.
 
-**`/docs`** — Documentation page explaining the x402 flow, Umbra privacy model, SNS domain system, Covalent data layer, and Dodo payment flows. Links to the Anchor program on Devnet Explorer.
+**`/docs`** — Static documentation page describing x402, Umbra privacy, SNS domains, Covalent, and Dodo flows, plus external links.
 
 ### Component Specifications
 
-**`EconomyGraph.tsx`** — identical to aldor's Canvas-based 60fps topology graph. Five nodes: User, Manager, DeepResearch, Summarizer, SentimentAI. Animated payment-dot edges. Edge labels show "UMBRA" instead of an amount (since amounts are private). When an UMBRA_TRANSFER_CONFIRMED event arrives, the corresponding edge briefly flashes purple (Umbra's brand color). Below the canvas: payment count, number of unique agents hired, current depth of active hire, and a "PRIVACY: ON" indicator.
+**`EconomyGraph.tsx`** — Canvas-based topology graph with five fixed nodes (User, Manager, DeepResearch, Summarizer, SentimentAI). Edge labels show "UMBRA" and a purple flash animates when UMBRA_TRANSFER_CONFIRMED arrives for one of the displayed agents. The footer shows payment count, unique agent count, and max depth.
 
-**`AgentChat.tsx`** — identical to aldor's chat component. Text input, submit button, scrolling SSE step log. Each step type has a distinct color: MANAGER_PLANNING blue, UMBRA_TRANSFER_INITIATED purple, UMBRA_TRANSFER_CONFIRMED bright purple, SNS_RESOLVED teal, X402_SETTLED green, SPECIALIST_FAILED red, BUDGET_EXCEEDED orange. Final result displayed at the bottom when RESULT_COMPOSED arrives.
+**`AgentChat.tsx`** — chat input + SSE log with color-coded event types. Final RESULT_COMPOSED is rendered under the log.
 
-**`TransactionLog.tsx`** — scrollable list of settled payments. Each entry shows: from-agent SNS domain → to-agent SNS domain, the word "PRIVATE" where the amount would be (since Umbra conceals it), the A2A depth badge (orange, shown only when depth > 0), and a clickable Umbra transaction signature link to Solana Explorer. No amounts are shown anywhere in this component.
+**`TransactionLog.tsx`** — list of X402_SETTLED steps. Shows orchestrator → agent, the word "PRIVATE" for amount, depth badge, and a tx signature link when available.
 
-**`ToolCatalog.tsx`** — fetches GET `/api/agents` and renders each agent as a card with SNS domain, price, reputation as a percentage, capabilities tags, recursive badge if applicable, and a Covalent-fetched current stablecoin balance. The "Request Off-ramp" button on each card calls the Dodo off-ramp utility for that agent's balance.
+**`ToolCatalog.tsx`** — uses GET `/api/tools` and renders cards with SNS domain, category, price, optional reputation, and the Dodo off-ramp action (uses `NEXT_PUBLIC_AGENT_WALLET_MAP` to map snsDomain → wallet address).
 
-**`ProtocolTrace.tsx`** — filtered view of all SNS_RESOLVING, SNS_RESOLVED, UMBRA_TRANSFER_INITIATED, UMBRA_TRANSFER_CONFIRMED, and X402_SETTLED events. For SNS_RESOLVED: shows the domain and "→ stealth key resolved (hidden)". For UMBRA_TRANSFER_INITIATED: shows the SNS domain and amount. For UMBRA_TRANSFER_CONFIRMED: shows the Umbra signature truncated to 20 characters. For X402_SETTLED: shows a checkmark, agent name, and depth.
+**`ProtocolTrace.tsx`** — filtered timeline for SNS_RESOLVING, SNS_RESOLVED, UMBRA_TRANSFER_INITIATED, UMBRA_TRANSFER_CONFIRMED, and X402_SETTLED. No payment amounts are displayed; signatures are truncated when present.
 
-**`ExecutionSteps.tsx`** — chronological list of all SSE events with step numbers, type labels, human-readable descriptions, and elapsed-since-previous-step timings. Full audit trail in sequence.
+**`ExecutionSteps.tsx`** — full SSE event audit trail with elapsed time and best-effort task count when PLAN_CREATED contains JSON.
 
-**`WalletInfo.tsx`** — fetches stablecoin balance for the orchestrator wallet using Covalent's token balance endpoint (not direct RPC). Shows network label, truncated orchestrator public key, SOL balance via Covalent, stablecoin balance via Covalent, and a "Fund via Dodo" button that calls `fundAgentViaDodo` and opens the returned Dodo payment URL. Connected/disconnected indicator.
+# SYSTEM SPECIFICATION: ALDOR FRONTEND DASHBOARD (PHASE 6)
 
-**`UmbraPrivacyProof.tsx`** (new Aldor-only component) — displays a panel showing the privacy guarantees for each completed payment. For each X402_SETTLED event in the session: shows the Umbra transaction signature, the ephemeral key (truncated), a note that the amount is not visible on-chain, and a link to the Umbra protocol documentation. This panel is the "judge-facing evidence" that Umbra is actively being used for private settlement. It also shows a count of "Privacy-Protected Transfers" for the session and the total number of unique stealth addresses generated.
+## 1. PROJECT OVERVIEW
+You are building the frontend for **Aldor**, a Sovereign Autonomous Agentic Orchestrator on Solana. The dashboard is a "Command Center" for local AI agents (QVAC) that settle transactions privately (Umbra) and move value across liquidity routes (Dodo).
 
-**`CovalentDataPanel.tsx`** (replaces DuneEmbed) — uses `@covalenthq/client-sdk` to display two live data panels. The left panel is "Agentic GDP": fetches the decoded transaction history for the Anchor program address from Covalent, counts the total number of JobOutcomeRecorded events (as a proxy for completed agent hires), and displays this count as a live counter refreshed every 30 seconds. The right panel is "Economic Velocity": fetches the Covalent transaction history filtered to the last hour and displays a bar chart (rendered in pure Canvas, no chart library, matching the brutalist aesthetic) showing transactions per 5-minute bucket. Below both panels: a Covalent-fetched table of the most recent five transactions involving any registered agent wallet, showing timestamp, transaction type (decoded), and agent SNS domain.
+## 2. CORE TECH STACK
+- **Framework:** Next.js 14 (App Router, TypeScript).
+- **Styling:** Tailwind CSS (Strictly Monochrome + Accent colors).
+- **Web3 Connectivity:** 
+    - **Global Wallet Adapter:** `@solana/wallet-adapter-react` + `@solana/wallet-adapter-react-ui`. 
+    - **Auto-Detection:** Must detect Phantom, Backpack, and Solflare in the browser.
+- **Data Layer:** `@covalenthq/client-sdk` (for wallet balances and on-chain GDP).
+- **State Management:** Server-Sent Events (SSE) streaming into a central `steps` array in a top-level React context.
+
+## 3. DESIGN SYSTEM (CYBER-BRUTALIST)
+- **Background:** Pure Black (#000000).
+- **Typography:** Monospace throughout (e.g., 'JetBrains Mono' or 'Monaco').
+- **Borders:** 1px solid #333333. **STRICT: NO ROUNDED CORNERS (border-radius: 0).**
+- **Color Palette:**
+    - Primary: Terminal Green (#00FF00) - for success and CLI text.
+    - Secondary: Muted Gray (#666666).
+    - Privacy/Umbra: Electric Purple (#A855F7).
+    - Warning/Budget: Dark Orange (#F97316).
+    - Resolution/SNS: Teal (#14B8A6).
+- **Animations:** No generic fades. Use 60fps HTML5 Canvas for the topology graph.
+
+## 4. GLOBAL WALLET & PAYMENT ARCHITECTURE
+- **Identity:** Use a `<WalletProvider>` at the root. The Header must contain the `<WalletMultiButton />`.
+- **Logic:** The user connects their wallet to **Sign** transactions prepared by the orchestrator.
+- **On-Ramp (Dodo):** Integrate a "Fund via Dodo" button. This triggers the Dodo Payments API to allow users to purchase PUSD/SOL using cards or cross-chain swaps if their connected wallet balance is low.
+- **Off-Ramp:** Each Agent Card in the ToolCatalog must have a "Request Off-ramp" button calling the Dodo Invoicing API.
+
+## 5. PAGE STRUCTURE & COMPONENTS
+
+### / (Main Dashboard)
+- **Header:** System health badges (UMBRA: ACTIVE, SNS: LIVE, QVAC: READY) + Wallet Connection.
+- **The 2x2 Grid:**
+    1. **EconomyGraph (Top-Left):** Native HTML5 Canvas topology. Nodes: User, Manager, Specialists. Animated dots represent PUSD flows. Edge labels: "UMBRA SHIELDED".
+    2. **AgentChat (Top-Right):** Monospace terminal input. Displays SSE steps. Use the specific colors defined in Section 3 for different event types.
+    3. **TransactionLog (Bottom-Left):** List of hashes. Amounts are hidden and replaced with the text "PRIVATE". Links to Solana Explorer.
+    4. **ProtocolTrace (Bottom-Right):** Real-time debug log of SNS resolution and stealth address generation.
+- **Bottom Section:**
+    - **UmbraPrivacyProof:** Displays a "Privacy Certificate" for the latest tx, showing the ZK-proof context and a count of shielded transfers.
+    - **CovalentDataPanel:** 
+        - Left: "Agentic GDP" counter (decoding Anchor JobOutcomeRecorded events).
+        - Right: "Velocity" (Canvas bar chart showing tx frequency).
+
+### /agents
+- Registry of agents. Each row shows: SNS Domain, Reputation (%), and Covalent-fetched wallet balance.
+
+### /tools
+- 8 Specialist Cards. 
+- "Hire" button: Triggers agent prompt.
+- "Fund" button: Opens Dodo checkout.
+
+## 6. DATA FLOW SPECIFICATION
+1. **On Mount:** Generate a `sessionId`. Establish `EventSource` to `http://localhost:3000/api/events?sessionId={id}`.
+2. **State:** Push all incoming events into a `steps` array.
+3. **Propagating State:** The `steps` array must be passed down to all grid components to ensure the Graph, Chat, and Log are perfectly synchronized in real-time.
+4. **Covalent Polling:** Independent 30s interval fetch for wallet balances and global GDP stats.
+
+## 7. CODING INSTRUCTIONS
+- Use **Server Components** where possible, but use `'use client'` for all interactive dashboard elements.
+- Implement the **Solana Wallet Adapter** with a clean, dark-mode override.
+- Ensure the **Canvas** in `EconomyGraph` handles window resizing correctly.
+- Do NOT use heavy UI libraries like Shadcn/UI or Framer Motion unless requested; stick to raw Tailwind and CSS for the brutalist aesthetic.
+
+**`UmbraPrivacyProof.tsx`** — shows privacy proof for X402_SETTLED steps: tx signature, a note that amounts are private, and a count of unique transfers. Ephemeral keys are not emitted in SSE, so the panel labels them as unavailable. Includes a link to Umbra protocol docs.
+
+**`CovalentDataPanel.tsx`** — uses backend proxy endpoints: GET `/api/analytics/recent-transactions` and GET `/api/analytics/palmusd-circulation`. Agentic GDP is derived from total supply (scaled), and economic velocity is computed by bucketing the last hour of transactions. Recent transactions list shows timestamp, kind, and tx hash prefix.
 
 ### Frontend Data Flow
 
-A single SSE connection is established on dashboard mount using a session ID generated client-side. The session ID is sent as a query parameter to both the SSE endpoint and the query POST endpoint so the backend routes events to the correct emitter. All step events are stored in a `steps` array in React state at the page level. This array is passed as props to all components. The EconomyGraph, ProtocolTrace, ExecutionSteps, TransactionLog, and UmbraPrivacyProof all derive their display state from the same `steps` array. The CovalentDataPanel polls independently on its own 30-second interval. The AgentChat calls the page-level `setSteps` callback when it receives new steps and also triggers the REST POST on submit.
+A single SSE connection is established on dashboard mount using a session ID generated client-side. The session ID is sent as a query parameter to both the SSE endpoint and the query POST endpoint so the backend routes events to the correct emitter. All step events are stored in a `steps` array in React state at the page level. This array is passed as props to all components. The EconomyGraph, ProtocolTrace, ExecutionSteps, TransactionLog, and UmbraPrivacyProof all derive their display state from the same `steps` array. The CovalentDataPanel polls independently on its own 30-second interval. The AgentChat calls the page-level `setSteps` callback when it receives new steps and also triggers the REST POST on submit. For funds there should be an option at the top sidebar to connect the wallet and include types detectable from the user's browser.
 
 ### Visual Design System
 
-Same cyber-minimalist aesthetic as aldor: black background, terminal green primary text, muted green secondary text, orange for budget/warnings, purple for Umbra-related events (unique to Aldor), monospace font throughout, no rounded corners, no shadows, no animations except the canvas topology and SSE append fade-in. Status badges at the top show: "RECURSIVE DELEGATION: ON", "UMBRA PRIVACY: ACTIVE", "SNS DOMAINS: ACTIVE", "COVALENT DATA: LIVE".
+Aldor's dashboard uses a cyber-minimalist aesthetic: terminal-inspired, data-dense, zero visual clutter. The design prioritizes instant information clarity for monitoring x402 payments, Umbra privacy, SNS resolution, and Covalent analytics in real time.
+
+**Color Palette**
+- **Background:** #050505 (deep matte black) — page, card backgrounds, dark fields
+- **Primary Text:** #FFFFFF (stark white) — headings, vital data (SNS domains, tx hashes, agent names)
+- **Secondary Text:** #888888 (muted gray) — labels, timestamps, secondary info
+- **Accent — Positive:** #00FF94 (electric green) — successful payments, active status, confirmed transfers
+- **Accent — Negative:** #FF3B30 (neon red) — failed payments, errors, warnings
+- **Accent — Budget Warning:** #FFA500 (orange) — budget depletion, max-depth warnings, throttling alerts
+- **Accent — Umbra Privacy:** #9D4EDD (electric purple) — all Umbra-related events, privacy confirmations, stealth transfers (unique to Aldor)
+- **Borders:** #333333 (muted gray, 1px solid) — all card borders, input fields, dividers
+- **Depth Layer:** #1a1a1a (very dark gray) — subtle background for nested panels, glassmorphism effect
+
+**Typography**
+- **Font Family:** JetBrains Mono (via Google Fonts) — monospace everywhere, no mix with sans-serif
+- **Heading (h1, h2):** weight 700, size 1.5–2rem, letter-spacing -0.02em, color #FFFFFF
+- **Body Text:** weight 400, size 0.875rem, line-height 1.5, color #FFFFFF
+- **Labels & Secondary:** weight 400, size 0.75rem, color #888888, letter-spacing 0.05em (slight tracking)
+- **Data Numbers (amounts, balances, counters):** weight 600, size 1rem, color #00FF94 (positive) or #FF3B30 (negative)
+- **Timestamps (SSE events):** weight 400, size 0.7rem, color #888888, monospace tabular figures
+
+**Borders and Spacing**
+- **Border Radius:** 0px (no rounding anywhere) except input focus borders which use subtle 1px outline
+- **Card Borders:** 1px solid #333333, no shadow
+- **Padding (cards, panels):** 1rem, 1.5rem, 2rem (never <0.5rem)
+- **Gap (grids, lists):** 1rem, 1.5rem, 2rem
+- **Margin (sections):** 1.5rem bottom between major sections
+- **Line Height:** 1.6 for body, 1.2 for headings, 1.8 for SSE logs (readability)
+
+**Component Styling**
+- **Cards & Panels:** Border #333333, background #050505, subtle glassmorphism via `background: rgba(255,255,255,0.02)` with 1px border — very faint depth effect, not solid or shadowed
+- **Input Fields:** Background #1a1a1a, border #333333, text #FFFFFF, padding 0.75rem, font JetBrains Mono, focus state is 2px outline #00FF94
+- **Buttons:** Background #1a1a1a, border 1px #333333, text #FFFFFF, hover state is `background #333333` + `scale(0.98)` (no actual scale transform to avoid pixel distortion, use subtle background shift), press state is `scale(0.95)` + `background #000000`
+- **Links:** Color #00FF94, no underline by default, underline on hover, cursor pointer
+- **Badge (status, reputation):** Background #1a1a1a, border 1px solid (color depends on status: #00FF94 for active, #FF3B30 for error, #FFA500 for warning), text #FFFFFF, size 0.65rem, padding 0.25rem 0.5rem, border-radius 0px
+
+**Event Type Color Coding (for ProtocolTrace and ExecutionSteps)**
+- **MANAGER_PLANNING, PLAN_CREATED:** #00FF94 (green) — planning phase
+- **SNS_RESOLVING, SNS_RESOLVED:** #FFFFFF (white) — identity resolution
+- **UMBRA_TRANSFER_INITIATED, UMBRA_TRANSFER_CONFIRMED:** #9D4EDD (purple) — payment execution
+- **X402_SETTLED:** #00FF94 (green) — successful payment
+- **SPECIALIST_FAILED, BUDGET_EXCEEDED, MAX_DEPTH_EXCEEDED:** #FF3B30 (red) — errors/limits
+- **RESULT_COMPOSED:** #FFFFFF (white) — completion
+
+**Interaction & Animation Patterns**
+- **Hover states:** 80ms transition, use `background-color` or `border-color` changes only (no transform to avoid jank), color shift from #333333 → #444444 or text shift #888888 → #FFFFFF
+- **Canvas topology graph:** Nodes are circles, edges are thin lines (#333333), payment edges flash purple (#9D4EDD) on UMBRA_TRANSFER_CONFIRMED for 600ms then fade back to #333333. Purple flash uses CSS animation, not setTimeout.
+- **SSE event append:** New event rows fade in over 200ms opacity 0→1, very subtle, no transform
+- **EconomyGraph node pulse:** Optional very subtle pulse (scale 1.0 → 1.02) on active payment, 400ms ease-in-out
+- **No other animations:** TransactionLog, ToolCatalog, ProtocolTrace are static lists with no entrance animations
+
+**Status Badges (Top Header)**
+Fixed row of four badges, each with:
+- **Badge Layout:** Pill shape (2px border-radius only on badge text wrapper, not the whole thing), background #1a1a1a, border 1px solid #333333, padding 0.5rem 1rem, text #FFFFFF weight 500, icon (16px) on left with 0.5rem gap
+- **"RECURSIVE DELEGATION: ON"** — icon: nested boxes, color: #00FF94 if active, #FF3B30 if max-depth hit
+- **"UMBRA PRIVACY: ACTIVE"** — icon: lock, color: #9D4EDD (always active in this app)
+- **"SNS DOMAINS: ACTIVE"** — icon: @ symbol, color: #FFFFFF (always active, shows resolver is working)
+- **"COVALENT DATA: LIVE"** — icon: chart/database, color: #00FF94 if data fresh (<30s old), #FFA500 if stale (>30s), #FF3B30 if error
+
+**Glassmorphism Effect Details**
+Cards and panels use a very subtle frosted-glass appearance:
+- Background: `rgba(0, 0, 0, 0.6)` or `rgba(255, 255, 255, 0.02)` — extremely faint light tint
+- Backdrop-filter: `blur(10px)` — optional, only if performance is acceptable (test Lighthouse)
+- Border: 1px solid #333333
+- Result: Cards have slight visual depth without shadows, maintaining the flat minimalist look
+
+**Accessibility**
+- All text meets 4.5:1 contrast ratio (white #FFFFFF on black #050505 = 21:1)
+- Focus states: 2px outline #00FF94 with 2px offset, visible on all interactive elements
+- Keyboard navigation: Tab order follows visual left-to-right, top-to-bottom hierarchy
+- Screen readers: All data labels use semantic HTML (`<label>`, `<th>` for tables, ARIA attributes where needed)
+- Reduced motion: Disable canvas animations if `prefers-reduced-motion: reduce`
+
+**CSS Utility Classes (for Tailwind Integration)**
+.card — border-1 #333333, bg-black, padding-1.5, font-mono
+.status-badge — pill with icon, color per status enum
+.event-log — monospace, line-height 1.8, small font-size
+.emphasis-green — color #00FF94, font-weight 600
+.emphasis-red — color #FF3B30, font-weight 600
+.emphasis-purple — color #9D4EDD, font-weight 600
+.timestamp — color #888888, font-size 0.7rem, font-weight 400
+.interactive-hover — bg-transition 80ms, scale-press 0.95 on active
+
+
+**Layout Grid**
+- **Desktop (1920px):** 2×2 main grid (EconomyGraph, AgentChat, TransactionLog, ProtocolTrace), full-width ExecutionSteps + UmbraPrivacyProof below, full-width CovalentDataPanel, ToolCatalog cards in 3-column grid
+- **Tablet (1024px):** 1 column stacked, EconomyGraph full width, all panels stack vertically
+- **Mobile (<768px):** 1 column, all panels full width, EconomyGraph height reduced to 300px, ToolCatalog cards 1 column
+
+**Brand Voice**
+Minimal, precise, technical. Labels are terse (e.g. "SNS: researcher.aldor.sol", "UMBRA: sig:Abc123…"). No padding with extra words. Status messages are concise: "Max depth exceeded", "Payment confirmed", not "Your payment is being processed".
 
 ### Phase 6 Verification Checklist
 
