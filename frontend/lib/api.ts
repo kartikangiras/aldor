@@ -1,0 +1,98 @@
+import type { AgentDefinition, PaymentItem, PaymentStats, StepEvent, RegistryAgent, RecentTransaction, DodoFundResponse, DodoOfframpResponse } from './types';
+
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+
+function getNetworkHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const network = localStorage.getItem('aldor_network');
+  if (network === 'mainnet' || network === 'devnet') {
+    return { 'X-Aldor-Network': network };
+  }
+  return {};
+}
+
+async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+  const networkHeaders = getNetworkHeader();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: {
+      ...networkHeaders,
+      ...(opts?.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => 'Unknown error');
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function getTools(): Promise<{ tools: AgentDefinition[] }> {
+  return apiFetch('/api/tools');
+}
+
+export async function getAgents(): Promise<RegistryAgent[]> {
+  return apiFetch('/api/agents');
+}
+
+export async function getRegistry(): Promise<RegistryAgent[]> {
+  return apiFetch('/api/registry');
+}
+
+export async function getPayments(limit = 100, offset = 0): Promise<{ items: PaymentItem[]; limit: number; offset: number }> {
+  return apiFetch(`/api/payments?limit=${limit}&offset=${offset}`);
+}
+
+export async function getStats(): Promise<PaymentStats> {
+  return apiFetch('/api/stats');
+}
+
+export async function getRecentTransactions(): Promise<{ items: RecentTransaction[] }> {
+  return apiFetch('/api/analytics/recent-transactions');
+}
+
+export async function getPalmUsdCirculation(): Promise<{ totalSupply: number }> {
+  return apiFetch('/api/analytics/palmusd-circulation');
+}
+
+export async function getPaymentConfig(): Promise<{ paymentMode: string; network: string; palmUsdMint: string; umbraEnabled: boolean }> {
+  return apiFetch('/api/payment/config');
+}
+
+export async function getPreflight(): Promise<{ ok: boolean; umbraEnabled: boolean; paymentMode: string }> {
+  return apiFetch('/api/payment/preflight');
+}
+
+export async function postQuery(query: string, session: string, budget = 0.01): Promise<{ result: string; requestId: string }> {
+  return apiFetch('/api/agent/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, session, budget }),
+  });
+}
+
+export async function fundViaDodo(amountUsd: number, walletAddress: string): Promise<DodoFundResponse> {
+  return apiFetch('/api/dodo/fund', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amountUsd, walletAddress, customerData: { email: 'guest@example.com', name: 'Guest User', countryCode: 'US' } }),
+  });
+}
+
+export async function offRampEarnings(agentAddress: string, amountStablecoin: number): Promise<DodoOfframpResponse> {
+  return apiFetch('/api/dodo/offramp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agentAddress, amountStablecoin, destinationDetails: {} }),
+  });
+}
+
+export function createEventSource(sessionId: string): EventSource {
+  const url = new URL(`${API_BASE}/api/agent/events`, typeof window !== 'undefined' ? window.location.href : undefined);
+  url.searchParams.set('session', sessionId);
+  const network = typeof window !== 'undefined' ? localStorage.getItem('aldor_network') : null;
+  if (network === 'mainnet' || network === 'devnet') {
+    url.searchParams.set('network', network);
+  }
+  return new EventSource(url.toString());
+}
