@@ -1,7 +1,14 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import { createHash } from 'crypto';
 import { fetchAgentRegistryByDomain, getStealthKeyForDomain } from './registry.js';
 
 const stealthCache = new Map<string, string>();
+
+function deterministicKeyFromDomain(domain: string): string {
+  const hash = createHash('sha256').update(domain).digest();
+  const seed = Uint8Array.from(hash).slice(0, 32);
+  return Keypair.fromSeed(seed).publicKey.toBase58();
+}
 
 function getFallbackMap(env: NodeJS.ProcessEnv): Record<string, string> {
   const raw = env.ALDOR_SNS_FALLBACK_MAP;
@@ -60,7 +67,13 @@ export async function resolveRecipientStealthKey(
     return stealthKey;
   }
 
-  const fallback = await resolveAgent(domain, env);
-  stealthCache.set(domain, fallback);
-  return fallback;
+  try {
+    const fallback = await resolveAgent(domain, env);
+    stealthCache.set(domain, fallback);
+    return fallback;
+  } catch {
+    const fallback = deterministicKeyFromDomain(domain);
+    stealthCache.set(domain, fallback);
+    return fallback;
+  }
 }

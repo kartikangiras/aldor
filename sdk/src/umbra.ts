@@ -41,6 +41,63 @@ function pickFunction(mod: any, name: string): ((...args: any[]) => any) | undef
   return mod?.[name] ?? mod?.default?.[name] ?? mod?.Umbra?.[name];
 }
 
+async function executeWithUmbraPrivacySdk(
+  mod: any,
+  params: UmbraSendParams,
+  env: NodeJS.ProcessEnv,
+): Promise<UmbraSendResult> {
+  const createSignerFromPrivateKeyBytes = pickFunction(mod, 'createSignerFromPrivateKeyBytes');
+  const getUmbraClient = pickFunction(mod, 'getUmbraClient');
+  const getUserRegistrationFunction = pickFunction(mod, 'getUserRegistrationFunction');
+  const getPublicBalanceToEncryptedBalanceDirectDepositorFunction = pickFunction(
+    mod,
+    'getPublicBalanceToEncryptedBalanceDirectDepositorFunction',
+  );
+
+  if (
+    !createSignerFromPrivateKeyBytes ||
+    !getUmbraClient ||
+    !getUserRegistrationFunction ||
+    !getPublicBalanceToEncryptedBalanceDirectDepositorFunction
+  ) {
+    throw new Error('Umbra Privacy SDK exports are incomplete for adapter mode.');
+  }
+
+  const signer = await createSignerFromPrivateKeyBytes(params.payer.secretKey);
+  const network = (env.SOLANA_CLUSTER ?? 'devnet').toLowerCase() === 'mainnet' ? 'mainnet' : 'devnet';
+  const rpcUrl = env.SOLANA_RPC_URL;
+  if (!rpcUrl) {
+    throw new Error('SOLANA_RPC_URL is required for Umbra Privacy SDK mode.');
+  }
+
+  const client = await getUmbraClient({
+    signer,
+    network,
+    rpcUrl,
+    rpcSubscriptionsUrl: env.SOLANA_RPC_SUBSCRIPTIONS_URL ?? rpcUrl.replace('https://', 'wss://'),
+    indexerApiEndpoint: env.UMBRA_INDEXER_API_ENDPOINT,
+  });
+
+  const register = getUserRegistrationFunction({ client });
+  try {
+    await register();
+  } catch {
+    // registration is idempotent in Umbra SDK; ignore when already registered
+  }
+
+  const deposit = getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client });
+  const signature = await deposit(
+    params.stealthPublicKey,
+    params.assetMint.toBase58(),
+    params.amount,
+  );
+
+  return {
+    signature: String(signature),
+    ephemeralKey: params.payer.publicKey.toBase58(),
+  };
+}
+
 export async function executeUmbraTransfer(
   params: UmbraSendParams,
   env: NodeJS.ProcessEnv = process.env,
@@ -55,6 +112,10 @@ export async function executeUmbraTransfer(
   const mod = await loadUmbraModule(env);
   const send = pickFunction(mod, 'send');
   if (!send) {
+    const hasUmbraClient = Boolean(pickFunction(mod, 'getUmbraClient'));
+    if (hasUmbraClient) {
+      return executeWithUmbraPrivacySdk(mod, params, env);
+    }
     throw new Error('Umbra SDK missing send() function');
   }
 
@@ -98,6 +159,16 @@ export async function verifyUmbraTransfer(
       ephemeralKey: params.ephemeralKey,
     });
     return Boolean(result);
+  }
+
+  // Umbra Privacy SDK does not currently expose a direct verify primitive compatible
+  // with this adapter contract. In that case, we at least require the tx to exist.
+  if (pickFunction(mod, 'getUmbraClient')) {
+    const tx = await params.connection.getParsedTransaction(params.signature, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+    return Boolean(tx && !tx.meta?.err);
   }
 
   const scan = pickFunction(mod, 'scan');
