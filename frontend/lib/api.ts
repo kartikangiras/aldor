@@ -13,16 +13,25 @@ function getNetworkHeader(): Record<string, string> {
 
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   const networkHeaders = getNetworkHeader();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...opts,
-    headers: {
-      ...networkHeaders,
-      ...(opts?.headers || {}),
-    },
-  });
+  const url = `${API_BASE}${path}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...opts,
+      headers: {
+        ...networkHeaders,
+        ...(opts?.headers || {}),
+      },
+    });
+  } catch (networkError: any) {
+    throw new Error(
+      `Network error fetching ${url}: ${networkError?.message ?? 'Failed to fetch'}. ` +
+        'Is the backend server running?',
+    );
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => 'Unknown error');
-    throw new Error(`HTTP ${res.status}: ${text}`);
+    throw new Error(`HTTP ${res.status} on ${url}: ${text}`);
   }
   return res.json() as Promise<T>;
 }

@@ -121,6 +121,7 @@ export default function DashboardPage() {
   const [steps, setSteps] = useState<StepEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStressTesting, setIsStressTesting] = useState(false);
+  const [hiredAgent, setHiredAgent] = useState<string | null>(null);
   const sessionRef = useRef<string>(generateSessionId());
   const esRef = useRef<EventSource | null>(null);
 
@@ -145,6 +146,18 @@ export default function DashboardPage() {
     return () => {
       es.close();
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const hire = params.get('hire');
+    if (hire) {
+      setHiredAgent(hire);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('hire');
+      window.history.replaceState({}, '', url.toString());
+    }
   }, []);
 
   const handleSubmit = useCallback(async (query: string) => {
@@ -195,12 +208,44 @@ export default function DashboardPage() {
   const settledCount = steps.filter((s) => s.type === 'X402_SETTLED').length;
   const uniqueAgents = new Set(steps.filter((s) => s.agent).map((s) => s.agent)).size;
   const maxDepth = steps.length > 0 ? Math.max(...steps.map((s) => s.depth)) : 0;
+  const latestResult = [...steps].reverse().find((s) => s.type === 'RESULT_COMPOSED')?.message ?? '';
 
   return (
     <div style={{ minHeight: '100vh', background: '#050505', fontFamily: "'JetBrains Mono', monospace" }}>
       <Header />
 
       <main style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {hiredAgent && (
+          <div
+            style={{
+              padding: '12px 16px',
+              border: '1px solid #00ff94',
+              background: 'rgba(0,255,148,0.05)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#00ff94' }}>
+              Agent <strong>{hiredAgent}</strong> selected for delegation. Type a query below to begin.
+            </span>
+            <button
+              onClick={() => setHiredAgent(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#888888',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+              }}
+            >
+              DISMISS
+            </button>
+          </div>
+        )}
+
         {/* ── Mission Control Hero ── */}
         <section
           style={{
@@ -352,6 +397,24 @@ export default function DashboardPage() {
             <CentralChatBox onSubmit={handleSubmit} isLoading={isLoading} />
           </div>
         </section>
+
+        {/* ── Latest Result Banner ── */}
+        {latestResult && (
+          <section style={{ border: '1px solid #333333', background: 'rgba(0,255,148,0.02)', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, #00ff9440, transparent)' }} />
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Zap size={14} color="#00ff94" />
+                <span style={{ fontSize: 10, letterSpacing: '0.1em', color: '#888888', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Latest Result
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: '#e0e0e0', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: "'JetBrains Mono', monospace" }}>
+                {latestResult}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Balance Pulse Sidebar (compact) ── */}
         <WalletInfo />
