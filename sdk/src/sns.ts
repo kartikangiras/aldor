@@ -11,7 +11,7 @@ function deterministicKeyFromDomain(domain: string): string {
 }
 
 function getFallbackMap(env: NodeJS.ProcessEnv): Record<string, string> {
-  const raw = env.ALDOR_SNS_FALLBACK_MAP;
+  const raw = env.ALDOR_SNS_FALLBACK_MAP ?? env.ALDOR_AGENT_WALLET_MAP;
   if (!raw) return {};
 
   try {

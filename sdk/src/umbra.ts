@@ -1,4 +1,5 @@
 import type { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import bs58 from 'bs58';
 
 export interface UmbraSendParams {
   connection: Connection;
@@ -63,12 +64,39 @@ async function executeWithUmbraPrivacySdk(
     throw new Error('Umbra Privacy SDK exports are incomplete for adapter mode.');
   }
 
-  const signer = await createSignerFromPrivateKeyBytes(params.payer.secretKey);
+  console.log('[UmbraPrivacySDK] Executing transfer', {
+    payer: params.payer.publicKey.toBase58(),
+    stealthPublicKey: params.stealthPublicKey,
+    assetMint: params.assetMint.toBase58(),
+    amount: String(params.amount),
+  });
+
+  let signer: any;
+  try {
+    signer = await createSignerFromPrivateKeyBytes(params.payer.secretKey);
+    console.log('[UmbraPrivacySDK] Signer created from raw bytes');
+  } catch (bytesError: any) {
+    console.log('[UmbraPrivacySDK] Raw bytes signer failed, trying base58', { error: bytesError?.message });
+    try {
+      const base58Secret = bs58.encode(params.payer.secretKey);
+      signer = await createSignerFromPrivateKeyBytes(base58Secret);
+      console.log('[UmbraPrivacySDK] Signer created from base58 string');
+    } catch (b58Error: any) {
+      throw new Error(
+        `Umbra signer creation failed. ` +
+        `Tried raw bytes (${bytesError?.message ?? bytesError}). ` +
+        `Tried base58 string (${b58Error?.message ?? b58Error}). ` +
+        `Ensure the Umbra SDK version is compatible with this adapter.`
+      );
+    }
+  }
   const network = (env.SOLANA_CLUSTER ?? 'devnet').toLowerCase() === 'mainnet' ? 'mainnet' : 'devnet';
   const rpcUrl = env.SOLANA_RPC_URL;
   if (!rpcUrl) {
     throw new Error('SOLANA_RPC_URL is required for Umbra Privacy SDK mode.');
   }
+
+  console.log('[UmbraPrivacySDK] Creating client', { network, rpcUrl });
 
   const client = await getUmbraClient({
     signer,
@@ -81,21 +109,39 @@ async function executeWithUmbraPrivacySdk(
   const register = getUserRegistrationFunction({ client });
   try {
     await register();
-  } catch {
+    console.log('[UmbraPrivacySDK] User registered');
+  } catch (regError: any) {
+    console.log('[UmbraPrivacySDK] Registration skipped (already registered or error)', { error: regError?.message });
     // registration is idempotent in Umbra SDK; ignore when already registered
   }
 
   const deposit = getPublicBalanceToEncryptedBalanceDirectDepositorFunction({ client });
-  const signature = await deposit(
-    params.stealthPublicKey,
-    params.assetMint.toBase58(),
-    params.amount,
-  );
+  console.log('[UmbraPrivacySDK] Initiating deposit', {
+    stealthPublicKey: params.stealthPublicKey,
+    assetMint: params.assetMint.toBase58(),
+    amount: String(params.amount),
+  });
 
-  return {
-    signature: String(signature),
-    ephemeralKey: params.payer.publicKey.toBase58(),
-  };
+  try {
+    const signature = await deposit(
+      params.stealthPublicKey,
+      params.assetMint.toBase58(),
+      params.amount,
+    );
+    console.log('[UmbraPrivacySDK] Deposit succeeded', { signature });
+
+    return {
+      signature: String(signature),
+      ephemeralKey: params.payer.publicKey.toBase58(),
+    };
+  } catch (depositError: any) {
+    console.error('[UmbraPrivacySDK] Deposit failed', {
+      error: depositError?.message ?? depositError,
+      logs: depositError?.logs,
+      instructionError: depositError?.instructionError,
+    });
+    throw new Error(`Umbra deposit failed: ${depositError?.message ?? depositError}`);
+  }
 }
 
 export async function executeUmbraTransfer(

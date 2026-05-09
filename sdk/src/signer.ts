@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js';
 import { buildPalmUsdTransferTx } from './palmUsd.js';
 import { executeUmbraTransfer } from './umbra.js';
-import { resolveRecipientStealthKey } from './sns.js';
+import { resolveAgent, resolveRecipientStealthKey } from './sns.js';
 import type { PaymentProof, PaymentSignerOptions, X402Accept } from './types.js';
 
 function parseAmountToBigInt(value: string): bigint {
@@ -37,9 +37,30 @@ export class PaymentSigner {
     const amountRaw = parseAmountToBigInt(challenge.maxAmountRequired);
     const kind = parseAssetKind(challenge.asset);
 
+    console.log('[PaymentSigner] signChallenge', {
+      asset: kind,
+      amount: String(amountRaw),
+      payTo: challenge.payTo,
+      payer: this.payer.publicKey.toBase58(),
+      resource: challenge.resource,
+    });
+
     let tx: Transaction;
     if (kind === 'SOL') {
-      const payTo = new PublicKey(challenge.payTo);
+      let resolvedAddress: string;
+      try {
+        resolvedAddress = await resolveAgent(challenge.payTo, process.env);
+        console.log('[PaymentSigner] Resolved SOL recipient', { domain: challenge.payTo, address: resolvedAddress });
+      } catch (resolveError: any) {
+        console.error('[PaymentSigner] Failed to resolve SOL recipient', { domain: challenge.payTo, error: resolveError?.message });
+        throw new Error(
+          `Cannot resolve SOL recipient '${challenge.payTo}'. ` +
+          `Ensure ALDOR_AGENT_WALLET_MAP or ALDOR_SNS_FALLBACK_MAP contains this domain. ` +
+          `Error: ${resolveError?.message ?? resolveError}`
+        );
+      }
+
+      const payTo = new PublicKey(resolvedAddress);
       tx = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: this.payer.publicKey,
@@ -48,43 +69,71 @@ export class PaymentSigner {
         }),
       );
     } else {
-      const stealthKey = await resolveRecipientStealthKey(challenge.payTo, this.connection, process.env);
-      const result = await executeUmbraTransfer({
-        connection: this.connection,
-        payer: this.payer,
-        stealthPublicKey: stealthKey,
-        assetMint: this.palmUsdMint,
-        amount: amountRaw,
-      });
+      let stealthKey: string;
+      try {
+        stealthKey = await resolveRecipientStealthKey(challenge.payTo, this.connection, process.env);
+        console.log('[PaymentSigner] Resolved stealth key', { domain: challenge.payTo, stealthKey });
+      } catch (resolveError: any) {
+        console.error('[PaymentSigner] Failed to resolve stealth key', { domain: challenge.payTo, error: resolveError?.message });
+        throw new Error(
+          `Cannot resolve stealth key for '${challenge.payTo}'. ` +
+          `Ensure ALDOR_UMBRA_STEALTH_MAP contains this domain. ` +
+          `Error: ${resolveError?.message ?? resolveError}`
+        );
+      }
 
-      return {
-        signature: result.signature,
-        ephemeralKey: result.ephemeralKey ?? this.payer.publicKey.toBase58(),
-        payer: this.payer.publicKey.toBase58(),
-        amount: challenge.maxAmountRequired,
-        asset: challenge.asset,
-        resource: challenge.resource,
-      };
+      try {
+        const result = await executeUmbraTransfer({
+          connection: this.connection,
+          payer: this.payer,
+          stealthPublicKey: stealthKey,
+          assetMint: this.palmUsdMint,
+          amount: amountRaw,
+        });
+
+        return {
+          signature: result.signature,
+          ephemeralKey: result.ephemeralKey ?? this.payer.publicKey.toBase58(),
+          payer: this.payer.publicKey.toBase58(),
+          amount: challenge.maxAmountRequired,
+          asset: challenge.asset,
+          resource: challenge.resource,
+        };
+      } catch (umbraError: any) {
+        console.error('[PaymentSigner] Umbra transfer failed', { domain: challenge.payTo, error: umbraError?.message });
+        throw new Error(`Umbra transfer failed for '${challenge.payTo}': ${umbraError?.message ?? umbraError}`);
+      }
     }
 
     tx.feePayer = this.payer.publicKey;
     tx.recentBlockhash = (await this.connection.getLatestBlockhash(this.commitment)).blockhash;
     tx.sign(this.payer);
 
-    const signature = await this.connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: this.commitment,
+    console.log('[PaymentSigner] Sending SOL transfer tx', {
+      from: this.payer.publicKey.toBase58(),
+      to: (tx.instructions[0].keys.find((k) => k.pubkey !== this.payer.publicKey)?.pubkey ?? this.payer.publicKey).toBase58(),
+      lamports: Number(amountRaw),
     });
 
-    await this.connection.confirmTransaction(signature, this.commitment);
+    try {
+      const signature = await this.connection.sendRawTransaction(tx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: this.commitment,
+      });
 
-    return {
-      signature,
-      ephemeralKey: this.payer.publicKey.toBase58(),
-      payer: this.payer.publicKey.toBase58(),
-      amount: challenge.maxAmountRequired,
-      asset: challenge.asset,
-      resource: challenge.resource,
-    };
+      await this.connection.confirmTransaction(signature, this.commitment);
+
+      return {
+        signature,
+        ephemeralKey: this.payer.publicKey.toBase58(),
+        payer: this.payer.publicKey.toBase58(),
+        amount: challenge.maxAmountRequired,
+        asset: challenge.asset,
+        resource: challenge.resource,
+      };
+    } catch (txError: any) {
+      console.error('[PaymentSigner] SOL transfer failed', { error: txError?.message, logs: txError?.logs });
+      throw new Error(`SOL transfer failed: ${txError?.message ?? txError}`);
+    }
   }
 }
