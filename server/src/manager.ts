@@ -421,12 +421,30 @@ export async function runOrchestrator(
         },
       });
     } catch (error: any) {
+      const raw = error?.message ?? String(error);
+      const isUmbraError =
+        raw.includes('Umbra') ||
+        raw.includes('Umbra deposit failed') ||
+        raw.includes('stealth key') ||
+        raw.includes('Cannot resolve stealth key');
+      const isSolError =
+        raw.includes('SOL transfer failed') ||
+        raw.includes('Cannot resolve SOL recipient') ||
+        raw.includes('insufficient funds');
+      const isPaymentError = raw.includes('402') || raw.includes('PAYMENT') || raw.includes('challenge');
+      const contextPrefix = isUmbraError
+        ? '[UMBRA_TRANSFER_FAILED] '
+        : isSolError
+        ? '[SOL_TRANSFER_FAILED] '
+        : isPaymentError
+        ? '[X402_PAYMENT_FAILED] '
+        : '[SPECIALIST_FAILED] ';
       emit(emitter, {
         type: 'SPECIALIST_FAILED',
         depth,
         agent: agent.name,
         domain: agent.domain,
-        message: error?.message ?? String(error),
+        message: `${contextPrefix}${raw}`,
         requestId,
         jobId: taskJobId,
         parentJobId: runJobId,
@@ -437,6 +455,18 @@ export async function runOrchestrator(
 
     const responseText = typeof response.data?.result === 'string' ? response.data.result : JSON.stringify(response.data);
     parts.push(`${agent.name}: ${responseText}`);
+
+    emit(emitter, {
+      type: 'AGENT_RESPONDED',
+      depth,
+      agent: agent.name,
+      domain: agent.domain,
+      message: responseText,
+      requestId,
+      jobId: taskJobId,
+      parentJobId: runJobId,
+      sessionId: context.sessionId,
+    });
 
     const txSig =
       (response.config.headers as any)?.['X-Aldor-Payment-Signature'] ??
