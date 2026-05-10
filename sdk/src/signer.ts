@@ -5,10 +5,21 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { buildPalmUsdTransferTx } from './palmUsd.js';
 import { executeUmbraTransfer } from './umbra.js';
 import { resolveAgent, resolveRecipientStealthKey } from './sns.js';
 import type { PaymentProof, PaymentSignerOptions, X402Accept } from './types.js';
+
+function getAgentWalletMap(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const raw = env.ALDOR_AGENT_WALLET_MAP;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
 
 function parseAmountToBigInt(value: string): bigint {
   return BigInt(value);
@@ -82,6 +93,7 @@ export class PaymentSigner {
         );
       }
 
+      // Try Umbra privacy transfer first
       try {
         const result = await executeUmbraTransfer({
           connection: this.connection,
@@ -91,6 +103,7 @@ export class PaymentSigner {
           amount: amountRaw,
         });
 
+        console.log('[PaymentSigner] Umbra transfer succeeded', { signature: result.signature });
         return {
           signature: result.signature,
           ephemeralKey: result.ephemeralKey ?? this.payer.publicKey.toBase58(),
@@ -100,8 +113,81 @@ export class PaymentSigner {
           resource: challenge.resource,
         };
       } catch (umbraError: any) {
-        console.error('[PaymentSigner] Umbra transfer failed', { domain: challenge.payTo, error: umbraError?.message });
-        throw new Error(`Umbra transfer failed for '${challenge.payTo}': ${umbraError?.message ?? umbraError}`);
+        console.warn('[PaymentSigner] Umbra transfer failed, falling back to direct SPL transfer', {
+          domain: challenge.payTo,
+          error: umbraError?.message,
+        });
+
+        // Fallback: direct SPL token transfer to agent wallet
+        const walletMap = getAgentWalletMap(process.env);
+        const agentWallet = walletMap[challenge.payTo];
+        if (!agentWallet) {
+          throw new Error(
+            `Umbra transfer failed and no wallet address found for '${challenge.payTo}' in ALDOR_AGENT_WALLET_MAP. ` +
+            `Original Umbra error: ${umbraError?.message ?? umbraError}`
+          );
+        }
+
+        try {
+          const recipient = new PublicKey(agentWallet);
+          const fromAta = getAssociatedTokenAddressSync(this.palmUsdMint, this.payer.publicKey);
+          const toAta = getAssociatedTokenAddressSync(this.palmUsdMint, recipient);
+
+          // Check if recipient ATA exists
+          const toAccount = await this.connection.getAccountInfo(toAta);
+          const tx = new Transaction();
+
+          if (!toAccount) {
+            const { createAssociatedTokenAccountInstruction } = await import('@solana/spl-token');
+            tx.add(createAssociatedTokenAccountInstruction(this.payer.publicKey, toAta, recipient, this.palmUsdMint));
+          }
+
+          const { createTransferCheckedInstruction } = await import('@solana/spl-token');
+          tx.add(
+            createTransferCheckedInstruction(
+              fromAta,
+              this.palmUsdMint,
+              toAta,
+              this.payer.publicKey,
+              amountRaw,
+              6
+            )
+          );
+
+          tx.feePayer = this.payer.publicKey;
+          tx.recentBlockhash = (await this.connection.getLatestBlockhash(this.commitment)).blockhash;
+          tx.sign(this.payer);
+
+          console.log('[PaymentSigner] Sending SPL fallback transfer', {
+            from: this.payer.publicKey.toBase58(),
+            to: agentWallet,
+            amount: String(amountRaw),
+          });
+
+          const signature = await this.connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: this.commitment,
+          });
+
+          await this.connection.confirmTransaction(signature, this.commitment);
+          console.log('[PaymentSigner] SPL fallback transfer succeeded', { signature });
+
+          return {
+            signature,
+            ephemeralKey: this.payer.publicKey.toBase58(),
+            payer: this.payer.publicKey.toBase58(),
+            amount: challenge.maxAmountRequired,
+            asset: challenge.asset,
+            resource: challenge.resource,
+          };
+        } catch (splError: any) {
+          console.error('[PaymentSigner] SPL fallback transfer failed', { error: splError?.message, logs: splError?.logs });
+          throw new Error(
+            `Both Umbra and SPL fallback transfers failed for '${challenge.payTo}'. ` +
+            `Umbra error: ${umbraError?.message ?? umbraError}. ` +
+            `SPL error: ${splError?.message ?? splError}`
+          );
+        }
       }
     }
 
