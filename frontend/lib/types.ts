@@ -6,11 +6,18 @@ export type StepEventType =
   | 'UMBRA_TRANSFER_INITIATED'
   | 'UMBRA_TRANSFER_CONFIRMED'
   | 'X402_SETTLED'
+  | 'X402_CHALLENGE'
+  | 'X402_PAYMENT_SENT'
   | 'AGENT_RESPONDED'
   | 'SPECIALIST_FAILED'
   | 'BUDGET_EXCEEDED'
   | 'MAX_DEPTH_EXCEEDED'
-  | 'RESULT_COMPOSED';
+  | 'RESULT_COMPOSED'
+  | 'A2A_HIRE_INITIATED'
+  | 'A2A_HIRE_COMPLETED'
+  | 'REPUTATION_CHECK'
+  | 'WALLET_SIGN_REQUESTED'
+  | 'WALLET_SIGN_CONFIRMED';
 
 export interface StepEvent {
   type: StepEventType;
@@ -86,4 +93,40 @@ export interface DodoFundResponse {
 
 export interface DodoOfframpResponse {
   invoiceId: string;
+}
+
+export interface X402Accept {
+  scheme: string;
+  network: string;
+  maxAmountRequired: string;
+  resource: string;
+  description?: string;
+  mimeType?: string;
+  payTo: string;
+  maxTimeoutSeconds?: number;
+  asset: string;
+}
+
+export interface X402Challenge {
+  x402Version: number;
+  recipient: string;
+  amount: string;
+  asset: string;
+  network: string;
+  expiresAt: number;
+  description: string;
+  resource: string;
+  paymentMode?: 'server' | 'wallet';
+  recipientWallet?: string;
+  mint?: string;
+  decimals?: number;
+}
+
+export interface PaymentProof {
+  signature: string;
+  ephemeralKey?: string;
+  payer: string;
+  amount: string;
+  asset: string;
+  resource: string;
 }

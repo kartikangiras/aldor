@@ -4,3 +4,7 @@ node_modules
 target
 dist
 scripts
+frontend/.env
+frontend/.env.example
+.next
+models/

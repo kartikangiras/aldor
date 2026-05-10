@@ -13,6 +13,7 @@ import CovalentDataPanel from '@/components/CovalentDataPanel';
 import ToolCatalog from '@/components/ToolCatalog';
 import type { StepEvent } from '@/lib/types';
 import { postQuery, createEventSource } from '@/lib/api';
+import { useWalletPayments } from '@/lib/useWalletPayments';
 import { Radio, Shield, Cpu, Activity, Zap, Crosshair, Send, Loader2, MessageSquare, Sparkles, Search, Code, TrendingUp, Cloud } from 'lucide-react';
 
 function generateSessionId(): string {
@@ -124,6 +125,7 @@ export default function DashboardPage() {
   const [hiredAgent, setHiredAgent] = useState<string | null>(null);
   const sessionRef = useRef<string>(generateSessionId());
   const esRef = useRef<EventSource | null>(null);
+  const { handleWalletSignRequest } = useWalletPayments();
 
   useEffect(() => {
     const sessionId = sessionRef.current;
@@ -134,6 +136,11 @@ export default function DashboardPage() {
       try {
         const data = JSON.parse(event.data) as StepEvent;
         setSteps((prev) => [...prev, data]);
+
+        // Handle wallet-signed payment requests
+        if (data.type === 'WALLET_SIGN_REQUESTED') {
+          handleWalletSignRequest(data);
+        }
       } catch {
         // ignore parse errors
       }
@@ -146,7 +153,7 @@ export default function DashboardPage() {
     return () => {
       es.close();
     };
-  }, []);
+  }, [handleWalletSignRequest]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -1,4 +1,4 @@
-import type { AgentDefinition, PaymentItem, PaymentStats, StepEvent, RegistryAgent, RecentTransaction, DodoFundResponse, DodoOfframpResponse } from './types';
+import type { AgentDefinition, PaymentItem, PaymentStats, StepEvent, RegistryAgent, RecentTransaction, DodoFundResponse, DodoOfframpResponse, X402Challenge, PaymentProof } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
@@ -78,6 +78,23 @@ export async function postQuery(query: string, session: string, budget = 0.01): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, session, budget }),
   });
+}
+
+export async function submitWalletPayment(requestId: string, proof: PaymentProof): Promise<{ ok: boolean; requestId: string }> {
+  return apiFetch('/api/agent/pay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestId,
+      signature: proof.signature,
+      payer: proof.payer,
+      ephemeralKey: proof.ephemeralKey,
+    }),
+  });
+}
+
+export async function getPendingPayments(): Promise<{ items: Array<{ requestId: string; challenge: X402Challenge }> }> {
+  return apiFetch('/api/agent/payments/pending');
 }
 
 export async function fundViaDodo(amountUsd: number, walletAddress: string): Promise<DodoFundResponse> {

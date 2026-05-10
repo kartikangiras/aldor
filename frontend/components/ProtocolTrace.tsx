@@ -4,7 +4,12 @@ import { useState } from 'react';
 import type { StepEvent } from '@/lib/types';
 import { Lock, Eye, EyeOff, Terminal, ChevronRight, Shield } from 'lucide-react';
 
-const TRACE_TYPES = ['SNS_RESOLVING', 'SNS_RESOLVED', 'UMBRA_TRANSFER_INITIATED', 'UMBRA_TRANSFER_CONFIRMED', 'X402_SETTLED'];
+const TRACE_TYPES = [
+  'SNS_RESOLVING', 'SNS_RESOLVED',
+  'UMBRA_TRANSFER_INITIATED', 'UMBRA_TRANSFER_CONFIRMED', 'X402_SETTLED',
+  'A2A_HIRE_INITIATED', 'A2A_HIRE_COMPLETED', 'REPUTATION_CHECK',
+  'WALLET_SIGN_REQUESTED', 'WALLET_SIGN_CONFIRMED',
+];
 
 function TraceCard({ step, index }: { step: StepEvent; index: number }) {
   const [expanded, setExpanded] = useState(false);
