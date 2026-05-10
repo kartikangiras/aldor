@@ -18,6 +18,8 @@ function readDepth(req: Request): number {
 export function buildChallenge(req: Request, cfg: MiddlewareConfig): X402Challenge {
   const netConfig = networkFromRequest(req);
   const mint = cfg.tokenKind === 'SOL' ? 'SOL' : netConfig.palmUsdMint;
+  const isWalletMode = (cfg.paymentMode ?? serverConfig.paymentMode) === 'wallet';
+
   return {
     x402Version: 1,
     recipient: cfg.snsDomain,
@@ -28,7 +30,7 @@ export function buildChallenge(req: Request, cfg: MiddlewareConfig): X402Challen
     description: cfg.description,
     resource: `${serverConfig.serverBaseUrl}${cfg.resourcePath}`,
     paymentMode: cfg.paymentMode ?? serverConfig.paymentMode,
-    recipientWallet: (cfg.paymentMode ?? serverConfig.paymentMode) === 'wallet' ? cfg.recipientWallet : undefined,
+    recipientWallet: isWalletMode ? cfg.recipientWallet : undefined,
     mint,
     decimals: cfg.tokenKind === 'SOL' ? 9 : 6,
   };

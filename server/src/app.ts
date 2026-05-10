@@ -19,6 +19,7 @@ import { seedRegistryAgents } from './registrySeed.js';
 import { fetchPalmUsdCirculation } from './palmusd.js';
 import { runIntegrationDiagnostics } from './diagnostics.js';
 import { networkFromRequest } from './network.js';
+import { fulfillWalletPayment, listPendingPayments } from './walletPayments.js';
 
 function asyncHandler<T extends express.RequestHandler>(fn: T): express.RequestHandler {
   return (req, res, next) => {
@@ -265,6 +266,37 @@ export function createApp() {
     const result = await runOrchestrator(query, emitter, budget, depth, { sessionId, requestId }, netConfig.solanaCluster);
     res.json({ result, requestId });
   }));
+
+  // Wallet-signed payment submission
+  app.post('/api/agent/pay', asyncHandler(async (req, res) => {
+    const requestId = String(req.body?.requestId ?? '');
+    const signature = String(req.body?.signature ?? '');
+    const payer = String(req.body?.payer ?? '');
+    const ephemeralKey = String(req.body?.ephemeralKey ?? '');
+
+    if (!requestId || !signature) {
+      res.status(400).json({ error: 'MISSING_PROOF' });
+      return;
+    }
+
+    const fulfilled = fulfillWalletPayment(requestId, {
+      umbraSignature: signature,
+      umbraEphemeralKey: ephemeralKey,
+      payer,
+      timestamp: Date.now(),
+    });
+
+    if (!fulfilled) {
+      res.status(404).json({ error: 'REQUEST_NOT_FOUND', message: 'No pending payment found for this requestId' });
+      return;
+    }
+
+    res.json({ ok: true, requestId });
+  }));
+
+  app.get('/api/agent/payments/pending', (_req, res) => {
+    res.json({ items: listPendingPayments() });
+  });
 
   const weather = AGENTS.find((a) => a.name === 'WeatherBot')!;
   const summarize = AGENTS.find((a) => a.name === 'Summarizer')!;

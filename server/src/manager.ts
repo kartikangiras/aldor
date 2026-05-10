@@ -6,9 +6,10 @@ import { createPaidAxios, PaymentSigner, resolveRecipientStealthKey } from '../.
 import { AGENTS, byName } from './agents.js';
 import { serverConfig } from './config.js';
 import { resolveNetworkConfig } from './network.js';
-import type { AgentDefinition, StepEvent } from './eventtypes.js';
+import type { AgentDefinition, StepEvent, X402Challenge } from './eventtypes.js';
 import { recordJobOutcomeOnChain } from './reputation.js';
 import { runQvacEmbedding } from './qvac.js';
+import { requestWalletPayment } from './walletPayments.js';
 
 interface PlannedTask {
   agent: string;
@@ -34,10 +35,49 @@ export function calculateValueScore(reputation: number, price: number): number {
   return (reputation * reputation) / (price * 10_000);
 }
 
+/**
+ * Autonomous hiring decision based on reputation and cost.
+ * Returns the best agent for a given capability need.
+ */
+export function autonomousHiringDecision(
+  candidates: AgentDefinition[],
+  budgetRemaining: number,
+  preferRecursive = false,
+): AgentDefinition | null {
+  const affordable = candidates.filter((a) => {
+    const cost = a.token === 'PALM_USD' ? a.priceAtomic / 1_000_000 : a.priceAtomic / 1_000_000_000;
+    return cost <= budgetRemaining;
+  });
+
+  if (affordable.length === 0) return null;
+
+  const scored = affordable.map((agent) => ({
+    agent,
+    score: calculateValueScore(agent.reputation, agent.priceAtomic),
+    recursiveMatch: agent.recursive === preferRecursive ? 1 : 0,
+  }));
+
+  // Sort by recursive match first, then by value score
+  scored.sort((a, b) => {
+    if (b.recursiveMatch !== a.recursiveMatch) return b.recursiveMatch - a.recursiveMatch;
+    return b.score - a.score;
+  });
+
+  return scored[0]?.agent ?? null;
+}
+
 function ruleBasedPlanner(query: string, depth: number): PlannedTask[] {
   const q = query.toLowerCase();
 
   if (depth > 0) {
+    // For recursive calls, use autonomous hiring to pick best summarizer + sentiment
+    const nlpAgents = AGENTS.filter((a) => a.category === 'nlp');
+    const bestNlp = autonomousHiringDecision(nlpAgents, 0.01, false);
+    if (bestNlp) {
+      return [
+        { agent: bestNlp.name, route: bestNlp.path, payload: { text: query } },
+      ];
+    }
     return [
       { agent: 'Summarizer', route: '/api/summarize', payload: { text: query } },
       { agent: 'SentimentAI', route: '/api/sentiment', payload: { text: query } },
@@ -45,18 +85,53 @@ function ruleBasedPlanner(query: string, depth: number): PlannedTask[] {
   }
 
   if (q.includes('research')) {
+    const researchAgents = AGENTS.filter((a) => a.category === 'research');
+    const best = autonomousHiringDecision(researchAgents, 0.01, true);
+    if (best) {
+      return [{ agent: best.name, route: best.path, payload: { topic: query } }];
+    }
     return [{ agent: 'DeepResearch', route: '/api/agent/research', payload: { topic: query } }];
   }
   if (q.includes('code')) {
+    const codeAgents = AGENTS.filter((a) => a.category === 'code');
+    const best = autonomousHiringDecision(codeAgents, 0.01, true);
+    if (best) {
+      return [{ agent: best.name, route: best.path, payload: { task: query } }];
+    }
     return [{ agent: 'CodingAgent', route: '/api/agent/code', payload: { task: query } }];
   }
   if (q.includes('translate')) {
+    const best = autonomousHiringDecision(
+      AGENTS.filter((a) => a.category === 'nlp'),
+      0.01,
+      false,
+    );
+    if (best) {
+      return [{ agent: best.name, route: best.path, payload: { text: query, target: 'es' } }];
+    }
     return [{ agent: 'TranslateBot', route: '/api/agent/translate', payload: { text: query, target: 'es' } }];
   }
   if (q.includes('weather')) {
+    const best = autonomousHiringDecision(
+      AGENTS.filter((a) => a.category === 'utility'),
+      0.01,
+      false,
+    );
+    if (best) {
+      return [{ agent: best.name, route: best.path, payload: { location: 'Bengaluru' } }];
+    }
     return [{ agent: 'WeatherBot', route: '/api/weather', payload: { location: 'Bengaluru' } }];
   }
 
+  // Default: hire best nlp agent
+  const bestNlp = autonomousHiringDecision(
+    AGENTS.filter((a) => a.category === 'nlp'),
+    0.01,
+    false,
+  );
+  if (bestNlp) {
+    return [{ agent: bestNlp.name, route: bestNlp.path, payload: { text: query } }];
+  }
   return [{ agent: 'Summarizer', route: '/api/summarize', payload: { text: query } }];
 }
 
@@ -115,7 +190,12 @@ function buildPlannerPrompt(query: string, depth: number): { system: string; use
     description: agent.description,
   }));
 
-  const system = `You are a planner for agent routing.\nReturn ONLY valid JSON: an array of tasks.\nEach task must be {"agent":"Name","route":"/api/...","payload":{...}}.\nUse only agents from the provided list.\nIf depth > 0, prefer non-recursive specialists.\nNo markdown, no prose.`;
+  const system = `You are a planner for agent routing.
+Return ONLY valid JSON: an array of tasks.
+Each task must be {"agent":"Name","route":"/api/...","payload":{...}}.
+Use only agents from the provided list.
+If depth > 0, prefer non-recursive specialists.
+No markdown, no prose.`;
   const user = JSON.stringify({ query, depth, agents });
 
   return { system, user };
@@ -189,6 +269,45 @@ async function planWithGroq(query: string, depth: number): Promise<PlannedTask[]
   }
 }
 
+async function planWithGemini(query: string, depth: number): Promise<PlannedTask[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return [];
+  const { system, user } = buildPlannerPrompt(query, depth);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-1.5-flash'}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: system ? { parts: [{ text: system }] } : undefined,
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: {
+            maxOutputTokens: 500,
+            temperature: 0.2,
+          },
+        }),
+        signal: controller.signal,
+      },
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as any;
+    const content = String(payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
+    if (!content) return [];
+    const parsed = extractJsonArray(content);
+    return normalizeTasks(parsed);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function planWithAnthropic(query: string, depth: number): Promise<PlannedTask[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return [];
@@ -232,8 +351,12 @@ async function planTasks(query: string, depth: number): Promise<PlannedTask[]> {
   const qvacTasks = await planWithQvacEmbeddings(query, depth).catch(() => []);
   if (qvacTasks.length > 0) return qvacTasks;
 
+  // Chain: Groq -> Gemini -> Anthropic -> ruleBased
   const groqTasks = await planWithGroq(query, depth).catch(() => []);
   if (groqTasks.length > 0) return groqTasks;
+
+  const geminiTasks = await planWithGemini(query, depth).catch(() => []);
+  if (geminiTasks.length > 0) return geminiTasks;
 
   const anthropicTasks = await planWithAnthropic(query, depth).catch(() => []);
   if (anthropicTasks.length > 0) return anthropicTasks;
@@ -264,6 +387,24 @@ function chooseAgent(agentName: string): AgentDefinition {
   return candidates.sort((a, b) => calculateValueScore(b.reputation, b.priceAtomic) - calculateValueScore(a.reputation, a.priceAtomic))[0];
 }
 
+function buildX402Challenge(agent: AgentDefinition, netConfig: any): X402Challenge {
+  const mint = agent.token === 'SOL' ? 'SOL' : netConfig.palmUsdMint;
+  return {
+    x402Version: 1,
+    recipient: agent.domain,
+    amount: String(agent.priceAtomic),
+    asset: mint,
+    network: netConfig.solanaCluster === 'mainnet' ? 'solana-mainnet' : 'solana-devnet',
+    expiresAt: Date.now() + 60_000,
+    description: agent.description,
+    resource: `${serverConfig.serverBaseUrl}${agent.path}`,
+    paymentMode: serverConfig.paymentMode,
+    recipientWallet: serverConfig.paymentMode === 'wallet' ? undefined : undefined,
+    mint,
+    decimals: agent.token === 'SOL' ? 9 : 6,
+  };
+}
+
 export async function runOrchestrator(
   query: string,
   emitter: EventEmitter,
@@ -283,6 +424,8 @@ export async function runOrchestrator(
     covalentChain: 'solana-devnet',
     explorerCluster: '?cluster=devnet',
   };
+
+  const isWalletMode = serverConfig.paymentMode === 'wallet';
 
   emit(emitter, {
     type: 'MANAGER_PLANNING',
@@ -307,6 +450,7 @@ export async function runOrchestrator(
   let spentPalm = 0;
   const parts: string[] = [];
 
+  // Set up server signer for non-wallet mode
   const payerSecret = parsePayerSecret(serverConfig.payerSecretKey);
   const payerPublicKey = Keypair.fromSecretKey(payerSecret).publicKey.toBase58();
   const signer = new PaymentSigner({
@@ -337,6 +481,32 @@ export async function runOrchestrator(
       });
       continue;
     }
+
+    // ── A2A Hire Initiated ──
+    emit(emitter, {
+      type: 'A2A_HIRE_INITIATED',
+      depth,
+      agent: agent.name,
+      domain: agent.domain,
+      cost: palmCost,
+      token: agent.token,
+      message: `Hiring ${agent.name} for ${formatPrice(agent)}`,
+      requestId,
+      jobId: taskJobId,
+      parentJobId: runJobId,
+      sessionId: context.sessionId,
+    });
+
+    emit(emitter, {
+      type: 'REPUTATION_CHECK',
+      depth,
+      agent: agent.name,
+      message: `Reputation: ${(agent.reputation / 100).toFixed(0)}%, Value score: ${calculateValueScore(agent.reputation, agent.priceAtomic).toFixed(2)}`,
+      requestId,
+      jobId: taskJobId,
+      parentJobId: runJobId,
+      sessionId: context.sessionId,
+    });
 
     emit(emitter, {
       type: 'SNS_RESOLVING',
@@ -377,12 +547,59 @@ export async function runOrchestrator(
       sessionId: context.sessionId,
     });
 
+    // ── Payment Flow ──
+    let paymentSignature: string | undefined;
+
+    if (isWalletMode) {
+      // Wallet-signed flow: emit challenge and wait for wallet payment
+      const challenge = buildX402Challenge(agent, netConfig);
+      try {
+        const proof = await requestWalletPayment(challenge, emitter, context.sessionId, 120_000);
+        paymentSignature = proof.umbraSignature;
+        emit(emitter, {
+          type: 'WALLET_SIGN_CONFIRMED',
+          depth,
+          agent: agent.name,
+          txSignature: paymentSignature,
+          message: 'Wallet signed payment confirmed',
+          requestId,
+          jobId: taskJobId,
+          parentJobId: runJobId,
+          sessionId: context.sessionId,
+        });
+      } catch (error: any) {
+        emit(emitter, {
+          type: 'SPECIALIST_FAILED',
+          depth,
+          agent: agent.name,
+          domain: agent.domain,
+          message: `WALLET_PAYMENT_FAILED: ${error?.message ?? String(error)}`,
+          requestId,
+          jobId: taskJobId,
+          parentJobId: runJobId,
+          sessionId: context.sessionId,
+        });
+        continue;
+      }
+    }
+
     const paid = createPaidAxios({
       signChallenge: (challenge) => {
         if (serverConfig.mockPayments) {
           return Promise.resolve({
             signature: `mock-umbra-${Date.now()}`,
             ephemeralKey: Keypair.generate().publicKey.toBase58(),
+            payer: payerPublicKey,
+            amount: challenge.maxAmountRequired,
+            asset: challenge.asset,
+            resource: challenge.resource,
+          });
+        }
+        if (isWalletMode && paymentSignature) {
+          // Return pre-signed proof from wallet
+          return Promise.resolve({
+            signature: paymentSignature,
+            ephemeralKey: payerPublicKey,
             payer: payerPublicKey,
             amount: challenge.maxAmountRequired,
             asset: challenge.asset,
@@ -410,16 +627,19 @@ export async function runOrchestrator(
 
     let response;
     try {
-      response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, {
-        headers: {
-          'X-Aldor-Max-Depth': String(depth),
-          'X-Aldor-Budget-Remaining': String(Math.max(budget - spentPalm, 0)),
-          'X-Aldor-Request-Id': requestId,
-          'X-Aldor-Job-Id': taskJobId,
-          'X-Aldor-Parent-Job-Id': runJobId,
-          'X-Aldor-Session': context.sessionId ?? '',
-        },
-      });
+      const headers: Record<string, string> = {
+        'X-Aldor-Max-Depth': String(depth),
+        'X-Aldor-Budget-Remaining': String(Math.max(budget - spentPalm, 0)),
+        'X-Aldor-Request-Id': requestId,
+        'X-Aldor-Job-Id': taskJobId,
+        'X-Aldor-Parent-Job-Id': runJobId,
+        'X-Aldor-Session': context.sessionId ?? '',
+      };
+      if (paymentSignature) {
+        headers['X-Aldor-Payment-Signature'] = paymentSignature;
+        headers['X-Aldor-Payer'] = payerPublicKey;
+      }
+      response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, { headers });
     } catch (error: any) {
       const raw = error?.message ?? String(error);
       const isUmbraError =
@@ -470,7 +690,7 @@ export async function runOrchestrator(
 
     const txSig =
       (response.config.headers as any)?.['X-Aldor-Payment-Signature'] ??
-      (response.config.headers as any)?.['X-Payment-Signature'] ??
+      paymentSignature ??
       null;
     emit(emitter, {
       type: 'UMBRA_TRANSFER_CONFIRMED',
@@ -494,6 +714,20 @@ export async function runOrchestrator(
       parentJobId: runJobId,
       sessionId: context.sessionId,
     });
+
+    // ── A2A Hire Completed ──
+    emit(emitter, {
+      type: 'A2A_HIRE_COMPLETED',
+      depth,
+      agent: agent.name,
+      domain: agent.domain,
+      message: `Hire completed. Result length: ${responseText.length} chars`,
+      requestId,
+      jobId: taskJobId,
+      parentJobId: runJobId,
+      sessionId: context.sessionId,
+    });
+
     await recordJobOutcomeOnChain(agent.domain, true);
   }
 
@@ -508,6 +742,13 @@ export async function runOrchestrator(
     sessionId: context.sessionId,
   });
   return result;
+}
+
+function formatPrice(agent: AgentDefinition): string {
+  if (agent.token === 'SOL') {
+    return `${agent.priceAtomic / 1_000_000_000} SOL`;
+  }
+  return `${(agent.priceAtomic / 1_000_000).toFixed(4)} Palm USD`;
 }
 
 export function getAgentRegistry() {
