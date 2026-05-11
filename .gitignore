@@ -4,8 +4,8 @@ node_modules
 target
 dist
 scripts
-frontend/.env
-frontend/.env.example
+client/.env
+client/.env.example
 .next
 models/
 iamges/
