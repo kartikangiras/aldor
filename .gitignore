@@ -9,3 +9,4 @@ client/.env.example
 .next
 models/
 iamges/
+client/public
