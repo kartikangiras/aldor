@@ -1,7 +1,3 @@
-;; agent-registry.clar
-;; Sovereign Agent Registry for x402-stacks Agentic Economy
-;; Stacks Testnet / Mainnet
-
 ;; ── Constants ──
 (define-constant ERR_UNAUTHORIZED (err u100))
 (define-constant ERR_ALREADY_REGISTERED (err u101))
