@@ -47,11 +47,16 @@ export default function WalletInfo() {
     setFunding(true);
     setDodoStatus(null);
     try {
-      const res = await fundViaDodo(10, walletAddress);
+      const returnUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/?funded=1`
+        : undefined;
+      const cancelUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/?cancelled=1`
+        : undefined;
+      const res = await fundViaDodo(10, walletAddress, returnUrl, cancelUrl);
       setFundUrl(res.payment);
       if (typeof res.payment === 'string' && res.payment.startsWith('http')) {
-        window.open(res.payment, '_blank');
-        setDodoStatus('Payment window opened');
+        window.location.href = res.payment;
       } else if (typeof res.payment === 'string') {
         setDodoStatus(`Invoice: ${res.payment}`);
       } else {

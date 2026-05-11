@@ -66,6 +66,17 @@ function buildMessages(steps: StepEvent[]): ChatMessage[] {
         }
         break;
 
+      case 'QVAC_MATCHED':
+        messages.push({
+          id: `${step.timestamp}-qvac`,
+          role: 'system',
+          content: `QVAC local embedding matched query to ${step.agent}`,
+          agent: step.agent,
+          timestamp: step.timestamp,
+          meta: 'Local-first routing via QVAC',
+        });
+        break;
+
       case 'SNS_RESOLVED':
         if (step.agent) {
           messages.push({

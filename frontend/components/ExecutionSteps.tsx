@@ -8,6 +8,10 @@ const TYPE_COLORS: Record<string, string> = {
   PLAN_CREATED: '#3b82f6',
   SNS_RESOLVING: '#14b8a6',
   SNS_RESOLVED: '#14b8a6',
+  QVAC_EMBEDDING: '#c084fc',
+  QVAC_EMBEDDING_FAILED: '#ff3b30',
+  QVAC_MATCHED: '#00ff94',
+  QVAC_SKIPPED: '#ffa500',
   UMBRA_TRANSFER_INITIATED: '#9d4edd',
   UMBRA_TRANSFER_CONFIRMED: '#9d4edd',
   X402_SETTLED: '#00ff94',
@@ -23,6 +27,10 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   PLAN_CREATED: <Zap size={10} />,
   SNS_RESOLVING: <Shield size={10} />,
   SNS_RESOLVED: <Shield size={10} />,
+  QVAC_EMBEDDING: <Activity size={10} />,
+  QVAC_EMBEDDING_FAILED: <AlertTriangle size={10} />,
+  QVAC_MATCHED: <Zap size={10} />,
+  QVAC_SKIPPED: <ChevronRight size={10} />,
   UMBRA_TRANSFER_INITIATED: <Shield size={10} />,
   UMBRA_TRANSFER_CONFIRMED: <Shield size={10} />,
   X402_SETTLED: <Zap size={10} />,
@@ -49,6 +57,14 @@ function formatVerboseDescription(step: StepEvent): string {
       return `Resolving SNS domain '${step.domain}' to stealth public key via registry or fallback map.`;
     case 'SNS_RESOLVED':
       return `SNS domain '${step.domain}' resolved successfully. Stealth key ready for Umbra transfer.`;
+    case 'QVAC_EMBEDDING':
+      return `Local QVAC embedding model running on-device to match query against ${step.message?.includes('agent') ? 'agent descriptions' : 'vector index'}.`;
+    case 'QVAC_EMBEDDING_FAILED':
+      return `QVAC embedding failed: ${step.message ?? 'Unknown error'}. Falling back to cloud LLM planner.`;
+    case 'QVAC_MATCHED':
+      return `QVAC cosine similarity matched query to ${step.agent}. Local-first routing selected.`;
+    case 'QVAC_SKIPPED':
+      return `QVAC returned no confident match (${step.message ?? 'no match'}). Using LLM planner instead.`;
     case 'UMBRA_TRANSFER_INITIATED':
       return `Confidential payment flow initiated to ${step.agent}. Creating stealth transaction via Umbra Privacy SDK.`;
     case 'UMBRA_TRANSFER_CONFIRMED':

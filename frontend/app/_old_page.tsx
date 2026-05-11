@@ -9,11 +9,14 @@ import TransactionLog from '@/components/TransactionLog';
 import ProtocolTrace from '@/components/ProtocolTrace';
 import ExecutionSteps from '@/components/ExecutionSteps';
 import UmbraPrivacyProof from '@/components/UmbraPrivacyProof';
+import IntegrationsStatus from '@/components/IntegrationsStatus';
 import CovalentDataPanel from '@/components/CovalentDataPanel';
 import ToolCatalog from '@/components/ToolCatalog';
+import WalletPaymentModal from '@/components/WalletPaymentModal';
 import type { StepEvent } from '@/lib/types';
 import { postQuery, createEventSource } from '@/lib/api';
-import { useWalletPayments } from '@/lib/useWalletPayments';
+import { useWalletPaymentQueue } from '@/lib/useWalletPaymentQueue';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { Radio, Shield, Cpu, Activity, Zap, Crosshair, Send, Loader2, MessageSquare, Sparkles, Search, Code, TrendingUp, Cloud } from 'lucide-react';
 
 function generateSessionId(): string {
@@ -125,7 +128,8 @@ export default function DashboardPage() {
   const [hiredAgent, setHiredAgent] = useState<string | null>(null);
   const sessionRef = useRef<string>(generateSessionId());
   const esRef = useRef<EventSource | null>(null);
-  const { handleWalletSignRequest } = useWalletPayments();
+  const { pendingPayments, addPaymentRequest, approvePayment, rejectPayment, dismissPayment, chooseMethod } = useWalletPaymentQueue();
+  const { publicKey } = useWallet();
 
   useEffect(() => {
     const sessionId = sessionRef.current;
@@ -137,9 +141,9 @@ export default function DashboardPage() {
         const data = JSON.parse(event.data) as StepEvent;
         setSteps((prev) => [...prev, data]);
 
-        // Handle wallet-signed payment requests
+        // Queue wallet payment requests for user approval
         if (data.type === 'WALLET_SIGN_REQUESTED') {
-          handleWalletSignRequest(data);
+          addPaymentRequest(data);
         }
       } catch {
         // ignore parse errors
@@ -153,7 +157,7 @@ export default function DashboardPage() {
     return () => {
       es.close();
     };
-  }, [handleWalletSignRequest]);
+  }, [addPaymentRequest]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -457,6 +461,9 @@ export default function DashboardPage() {
           <div style={{ borderRight: '1px solid #333333', minHeight: 280 }}>
             <UmbraPrivacyProof steps={steps} />
           </div>
+          <div style={{ borderRight: '1px solid #333333', minHeight: 280 }}>
+            <IntegrationsStatus />
+          </div>
           <div style={{ minHeight: 280 }}>
             <CovalentDataPanel />
           </div>
@@ -465,6 +472,16 @@ export default function DashboardPage() {
         {/* ── Tool Catalog ── */}
         <ToolCatalog />
       </main>
+
+      {/* ── Wallet Payment Modal ── */}
+      <WalletPaymentModal
+        payments={pendingPayments}
+        onApprove={approvePayment}
+        onReject={rejectPayment}
+        onDismiss={dismissPayment}
+        onChooseMethod={chooseMethod}
+        walletConnected={!!publicKey}
+      />
     </div>
   );
 }

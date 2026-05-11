@@ -17,7 +17,11 @@ export type StepEventType =
   | 'A2A_HIRE_COMPLETED'
   | 'REPUTATION_CHECK'
   | 'WALLET_SIGN_REQUESTED'
-  | 'WALLET_SIGN_CONFIRMED';
+  | 'WALLET_SIGN_CONFIRMED'
+  | 'QVAC_EMBEDDING'
+  | 'QVAC_EMBEDDING_FAILED'
+  | 'QVAC_MATCHED'
+  | 'QVAC_SKIPPED';
 
 export interface StepEvent {
   type: StepEventType;
@@ -120,6 +124,16 @@ export interface X402Challenge {
   recipientWallet?: string;
   mint?: string;
   decimals?: number;
+}
+
+export function isValidSolanaAddress(value: string): boolean {
+  try {
+    const { PublicKey } = require('@solana/web3.js');
+    new PublicKey(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export interface PaymentProof {

@@ -64,6 +64,37 @@ export async function getPalmUsdCirculation(): Promise<{ totalSupply: number }> 
   return apiFetch('/api/analytics/palmusd-circulation');
 }
 
+export interface PaymentActivity {
+  recentPayments: Array<{
+    hash: string;
+    timestamp: string;
+    kind: string;
+    agent: string;
+    amount: number;
+    token: string;
+    depth: number;
+    payer?: string;
+  }>;
+  stats: {
+    totalPayments: number;
+    uniqueAgents: number;
+    totalVolumeSol: string;
+    totalVolumePalm: string;
+    gdp: number;
+  };
+  agentBalances: Array<{
+    agent: string;
+    address: string;
+    solBalance: string;
+    palmBalance: string;
+  }>;
+  velocity: number[];
+}
+
+export async function getPaymentActivity(): Promise<PaymentActivity> {
+  return apiFetch('/api/analytics/payment-activity');
+}
+
 export async function getPaymentConfig(): Promise<{ paymentMode: string; network: string; palmUsdMint: string; umbraEnabled: boolean }> {
   return apiFetch('/api/payment/config');
 }
@@ -93,15 +124,38 @@ export async function submitWalletPayment(requestId: string, proof: PaymentProof
   });
 }
 
+export async function rejectWalletPayment(requestId: string, reason = 'USER_REJECTED'): Promise<{ ok: boolean; requestId: string; reason: string }> {
+  return apiFetch('/api/agent/pay/reject', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId, reason }),
+  });
+}
+
 export async function getPendingPayments(): Promise<{ items: Array<{ requestId: string; challenge: X402Challenge }> }> {
   return apiFetch('/api/agent/payments/pending');
 }
 
-export async function fundViaDodo(amountUsd: number, walletAddress: string): Promise<DodoFundResponse> {
+export async function getDodoHealth(): Promise<{ ok: boolean; mode: string; message: string }> {
+  return apiFetch('/api/dodo/health');
+}
+
+export async function fundViaDodo(
+  amountUsd: number,
+  walletAddress: string,
+  returnUrl?: string,
+  cancelUrl?: string,
+): Promise<DodoFundResponse> {
   return apiFetch('/api/dodo/fund', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amountUsd, walletAddress, customerData: { email: 'guest@example.com', name: 'Guest User', countryCode: 'US' } }),
+    body: JSON.stringify({
+      amountUsd,
+      walletAddress,
+      customerData: { email: 'guest@example.com', name: 'Guest User', countryCode: 'US' },
+      returnUrl,
+      cancelUrl,
+    }),
   });
 }
 

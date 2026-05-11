@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import PageHeader from '@/components/PageHeader';
-import { getAgents, fundViaDodo } from '@/lib/api';
+import { getAgents, fundViaDodo, getDodoHealth } from '@/lib/api';
 import type { RegistryAgent } from '@/lib/types';
-import { Zap, CreditCard, Filter, Search, ArrowUpRight } from 'lucide-react';
+import { Zap, CreditCard, Filter, Search, ArrowUpRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<string, string> = {
   utility: '#3b82f6',
@@ -22,18 +22,35 @@ const CATEGORY_COLORS: Record<string, string> = {
   health: '#f87171',
 };
 
+function getQueryParam(name: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function hasQueryParam(name: string): boolean {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).has(name);
+}
+
 export default function AgentsPage() {
   const [agents, setAgents] = useState<RegistryAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [fundingAgent, setFundingAgent] = useState<string | null>(null);
+  const [dodoStatus, setDodoStatus] = useState<{ ok: boolean; mode: string; message: string } | null>(null);
+  const [fundedAgent, setFundedAgent] = useState<string | null>(getQueryParam('funded'));
+  const [cancelled, setCancelled] = useState<boolean>(hasQueryParam('cancelled'));
 
   useEffect(() => {
     getAgents()
       .then(setAgents)
       .catch(() => setAgents([]))
       .finally(() => setLoading(false));
+
+    getDodoHealth()
+      .then(setDodoStatus)
+      .catch(() => setDodoStatus({ ok: false, mode: 'unknown', message: 'Dodo status unavailable' }));
   }, []);
 
   const categories = ['all', ...Array.from(new Set(agents.map((a) => a.category).filter(Boolean)))];
@@ -71,16 +88,26 @@ export default function AgentsPage() {
         alert(`No wallet address for ${agent.name}`);
         return;
       }
-      const res = await fundViaDodo(10, address);
+      const returnUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/agents?funded=${encodeURIComponent(agent.snsDomain)}`
+        : undefined;
+      const cancelUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/agents?cancelled=1`
+        : undefined;
+      const res = await fundViaDodo(10, address, returnUrl, cancelUrl);
       if (typeof res.payment === 'string' && res.payment.startsWith('http')) {
-        window.open(res.payment, '_blank');
+        window.location.href = res.payment;
       } else {
         alert(`Invoice created: ${res.payment}`);
       }
     } catch (e: any) {
       const msg = e.message ?? '';
       if (msg.includes('DODO_UNAVAILABLE') || msg.includes('503')) {
-        alert('Dodo Payments not configured. Set DODO_API_KEY in server environment.');
+        alert('Dodo Payments is not configured. Ask the server admin to set DODO_API_KEY in server/.env');
+      } else if (msg.includes('DODO_PRODUCT_ID')) {
+        alert('Dodo Payments: Product ID missing. Create a product in Dodo dashboard and set DODO_PRODUCT_ID in server/.env');
+      } else if (msg.includes('invalid') || msg.includes('Invalid')) {
+        alert('Dodo Payments: API key invalid. Check DODO_API_KEY in server/.env');
       } else {
         alert('Funding failed: ' + msg);
       }
@@ -104,6 +131,74 @@ export default function AgentsPage() {
       />
 
       <main style={{ padding: 24 }}>
+        {/* Dodo Status Banner */}
+        {dodoStatus && !dodoStatus.ok && (
+          <div style={{
+            padding: '10px 14px',
+            marginBottom: 16,
+            border: '1px solid rgba(255,165,0,0.3)',
+            background: 'rgba(255,165,0,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <AlertCircle size={14} color="#ffa500" />
+            <span style={{ fontSize: 11, color: '#ffa500' }}>
+              Dodo Payments: {dodoStatus.message}. Fund button is disabled.
+            </span>
+          </div>
+        )}
+        {dodoStatus && dodoStatus.ok && (
+          <div style={{
+            padding: '10px 14px',
+            marginBottom: 16,
+            border: '1px solid rgba(0,255,148,0.2)',
+            background: 'rgba(0,255,148,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <CheckCircle2 size={14} color="#00ff94" />
+            <span style={{ fontSize: 11, color: '#00ff94' }}>
+              Dodo Payments {dodoStatus.mode === 'test' ? '(test mode)' : '(live)'} — ready for funding
+            </span>
+          </div>
+        )}
+
+        {fundedAgent && (
+          <div style={{
+            padding: '10px 14px',
+            marginBottom: 16,
+            border: '1px solid rgba(0,255,148,0.3)',
+            background: 'rgba(0,255,148,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <CheckCircle2 size={14} color="#00ff94" />
+            <span style={{ fontSize: 11, color: '#00ff94' }}>
+              Payment successful! Agent <strong>{fundedAgent}</strong> has been funded. You can now hire them.
+            </span>
+          </div>
+        )}
+
+        {cancelled && (
+          <div style={{
+            padding: '10px 14px',
+            marginBottom: 16,
+            border: '1px solid rgba(255,165,0,0.3)',
+            background: 'rgba(255,165,0,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <AlertCircle size={14} color="#ffa500" />
+            <span style={{ fontSize: 11, color: '#ffa500' }}>
+              Payment was cancelled. No funds were charged.
+            </span>
+          </div>
+        )}
+
         {/* Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1px solid #333333', background: '#1a1a1a', flex: 1, minWidth: 200, maxWidth: 320 }}>
@@ -253,16 +348,16 @@ export default function AgentsPage() {
                   </button>
                   <button
                     onClick={() => handleFund(agent)}
-                    disabled={fundingAgent === agent.snsDomain}
+                    disabled={fundingAgent === agent.snsDomain || (dodoStatus !== null && !dodoStatus.ok)}
                     style={{
                       flex: 1,
                       padding: '8px',
                       border: '1px solid #333333',
                       background: '#1a1a1a',
-                      color: fundingAgent === agent.snsDomain ? '#555555' : '#ffa500',
+                      color: fundingAgent === agent.snsDomain || (dodoStatus !== null && !dodoStatus.ok) ? '#555555' : '#ffa500',
                       fontSize: 11,
                       fontWeight: 700,
-                      cursor: fundingAgent === agent.snsDomain ? 'not-allowed' : 'pointer',
+                      cursor: fundingAgent === agent.snsDomain || (dodoStatus !== null && !dodoStatus.ok) ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -272,7 +367,7 @@ export default function AgentsPage() {
                     }}
                   >
                     <CreditCard size={12} />
-                    {fundingAgent === agent.snsDomain ? '...' : 'Fund'}
+                    {fundingAgent === agent.snsDomain ? '...' : (dodoStatus !== null && !dodoStatus.ok) ? 'Unavailable' : 'Fund'}
                   </button>
                 </div>
               </div>
