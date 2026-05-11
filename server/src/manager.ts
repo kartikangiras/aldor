@@ -68,72 +68,54 @@ export function autonomousHiringDecision(
   return scored[0]?.agent ?? null;
 }
 
-function ruleBasedPlanner(query: string, depth: number): PlannedTask[] {
+function ruleBasedPlanner(query: string, _depth: number): PlannedTask[] {
   const q = query.toLowerCase();
+  // Every payload includes `text: query` as a universal fallback.
 
-  if (depth > 0) {
-    // For recursive calls, use autonomous hiring to pick best summarizer + sentiment
-    const nlpAgents = AGENTS.filter((a) => a.category === 'nlp');
-    const bestNlp = autonomousHiringDecision(nlpAgents, 0.01, false);
-    if (bestNlp) {
-      return [
-        { agent: bestNlp.name, route: bestNlp.path, payload: { text: query } },
-      ];
-    }
-    return [
-      { agent: 'Summarizer', route: '/api/summarize', payload: { text: query } },
-      { agent: 'SentimentAI', route: '/api/sentiment', payload: { text: query } },
-    ];
+  if (q.includes('research') || q.includes('trend') || q.includes('ecosystem')) {
+    return [{ agent: 'DeepResearch', route: '/api/agent/research', payload: { text: query, topic: query } }];
   }
-
-  if (q.includes('research')) {
-    const researchAgents = AGENTS.filter((a) => a.category === 'research');
-    const best = autonomousHiringDecision(researchAgents, 0.01, true);
-    if (best) {
-      return [{ agent: best.name, route: best.path, payload: { topic: query } }];
-    }
-    return [{ agent: 'DeepResearch', route: '/api/agent/research', payload: { topic: query } }];
+  if (q.includes('code') || q.includes('program') || q.includes('anchor') || q.includes('contract') || q.includes('smart contract')) {
+    return [{ agent: 'CodingAgent', route: '/api/agent/code', payload: { text: query, task: query } }];
   }
-  if (q.includes('code')) {
-    const codeAgents = AGENTS.filter((a) => a.category === 'code');
-    const best = autonomousHiringDecision(codeAgents, 0.01, true);
-    if (best) {
-      return [{ agent: best.name, route: best.path, payload: { task: query } }];
-    }
-    return [{ agent: 'CodingAgent', route: '/api/agent/code', payload: { task: query } }];
+  if (q.includes('defi') || q.includes('yield') || q.includes('farming') || q.includes('apy') || q.includes('liquidity')) {
+    return [{ agent: 'DeFiStrategist', route: '/api/agent/defi', payload: { text: query, strategy: query } }];
+  }
+  if (q.includes('market') || q.includes('price') || q.includes('trading') || q.includes('signal')) {
+    return [{ agent: 'MarketOracle', route: '/api/agent/oracle', payload: { text: query, asset: 'SOL' } }];
+  }
+  if (q.includes('audit') || q.includes('security') || q.includes('vulnerability')) {
+    return [{ agent: 'ContractAuditor', route: '/api/agent/audit', payload: { text: query, code: query } }];
   }
   if (q.includes('translate')) {
-    const best = autonomousHiringDecision(
-      AGENTS.filter((a) => a.category === 'nlp'),
-      0.01,
-      false,
-    );
-    if (best) {
-      return [{ agent: best.name, route: best.path, payload: { text: query, target: 'es' } }];
-    }
     return [{ agent: 'TranslateBot', route: '/api/agent/translate', payload: { text: query, target: 'es' } }];
   }
   if (q.includes('weather')) {
-    const best = autonomousHiringDecision(
-      AGENTS.filter((a) => a.category === 'utility'),
-      0.01,
-      false,
-    );
-    if (best) {
-      return [{ agent: best.name, route: best.path, payload: { location: 'Bengaluru' } }];
-    }
-    return [{ agent: 'WeatherBot', route: '/api/weather', payload: { location: 'Bengaluru' } }];
+    return [{ agent: 'WeatherBot', route: '/api/weather', payload: { text: query, location: query } }];
+  }
+  if (q.includes('image') || q.includes('generate') || q.includes('picture') || q.includes('art')) {
+    return [{ agent: 'ImageGenerator', route: '/api/agent/image', payload: { text: query, prompt: query } }];
+  }
+  if (q.includes('data') || q.includes('analyze') || q.includes('analytics') || q.includes('metric')) {
+    return [{ agent: 'DataAnalyst', route: '/api/agent/data', payload: { text: query, dataset: query } }];
+  }
+  if (q.includes('legal') || q.includes('contract review') || q.includes('law')) {
+    return [{ agent: 'LegalAdvisor', route: '/api/agent/legal', payload: { text: query, document: query } }];
+  }
+  if (q.includes('social') || q.includes('twitter') || q.includes('post') || q.includes('content')) {
+    return [{ agent: 'SocialMediaBot', route: '/api/agent/social', payload: { text: query, topic: query } }];
+  }
+  if (q.includes('math') || q.includes('calculate') || q.includes('solve')) {
+    return [{ agent: 'MathSolver', route: '/api/math-solve', payload: { text: query, expression: query } }];
+  }
+  if (q.includes('summarize') || q.includes('summary') || q.includes('tl;dr')) {
+    return [{ agent: 'Summarizer', route: '/api/summarize', payload: { text: query } }];
+  }
+  if (q.includes('sentiment') || q.includes('tone') || q.includes('emotion')) {
+    return [{ agent: 'SentimentAI', route: '/api/sentiment', payload: { text: query } }];
   }
 
-  // Default: hire best nlp agent
-  const bestNlp = autonomousHiringDecision(
-    AGENTS.filter((a) => a.category === 'nlp'),
-    0.01,
-    false,
-  );
-  if (bestNlp) {
-    return [{ agent: bestNlp.name, route: bestNlp.path, payload: { text: query } }];
-  }
+  // Default fallback
   return [{ agent: 'Summarizer', route: '/api/summarize', payload: { text: query } }];
 }
 
@@ -613,6 +595,9 @@ export async function runOrchestrator(
           parentJobId: runJobId,
           sessionId: context.sessionId,
         });
+        // Wait for tx to propagate before calling the agent endpoint
+        // This prevents the x402 middleware from failing verification due to RPC lag
+        await new Promise((r) => setTimeout(r, 2_500));
       } catch (error: any) {
         emit(emitter, {
           type: 'SPECIALIST_FAILED',

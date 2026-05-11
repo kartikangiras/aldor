@@ -58,7 +58,7 @@ async function ensureEmbedLoaded(): Promise<QvacEmbedState> {
 
   const modelId = await loadModel({
     modelSrc,
-    modelType: 'embeddings', // Fix: Must be 'embeddings'
+    modelType: 'llamacpp-embedding', // Fix: Must be 'llamacpp-embedding'
     modelConfig: {
       gpuLayers: 99, // Required for real-time performance
       device: 'gpu'

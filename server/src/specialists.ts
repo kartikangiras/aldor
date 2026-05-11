@@ -1,37 +1,10 @@
 import type { Request, Response } from 'express';
-import type { EventEmitter } from 'node:events';
-import { AGENTS } from './agents.js';
-import { runOrchestrator } from './manager.js';
 import { runQvacCompletion } from './qvac.js';
 import { callLlm } from './llm.js';
 
-function getDepth(req: Request): number {
-  const raw = req.header('X-Aldor-Max-Depth');
-  const parsed = Number(raw ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getBudget(req: Request): number {
-  const raw = req.header('X-Aldor-Budget-Remaining');
-  const parsed = Number(raw ?? 0.01);
-  return Number.isFinite(parsed) ? parsed : 0.01;
-}
-
-function getSessionContext(req: Request) {
-  const sessionId = String(req.body?.session ?? req.query?.session ?? req.header('X-Aldor-Session') ?? 'default');
-  const requestId = req.header('X-Aldor-Request-Id') ?? undefined;
-  const parentJobId = req.header('X-Aldor-Job-Id') ?? undefined;
-  const getEmitter = req.app.get('getSessionEmitter') as (session: string) => EventEmitter;
-  const emitter = getEmitter(sessionId);
-  const depth = getDepth(req) + 1;
-  const budget = Math.max(getBudget(req) - (AGENTS.find((a) => a.name === req.body?.agentName)?.priceAtomic ?? 0) / 1_000_000, 0);
-  const network = (req as any).aldor?.network ?? (req.header('X-Aldor-Network') ?? 'devnet');
-  return { sessionId, requestId, parentJobId, emitter, depth, budget, network };
-}
-
 export const handlers = {
   weather: async (req: Request, res: Response) => {
-    const location = String(req.body?.location ?? 'Unknown');
+    const location = String(req.body?.location ?? req.body?.text ?? 'Unknown');
     try {
       const result = await callLlm(
         'You are a weather assistant. Provide a plausible, detailed weather report for the given location. Include temperature, conditions, and a short forecast. Keep it under 3 sentences.',
@@ -45,9 +18,10 @@ export const handlers = {
   },
 
   summarize: async (req: Request, res: Response) => {
+    console.log('[Summarizer] Received body:', JSON.stringify(req.body));
     const text = String(req.body?.text ?? '');
     if (!text) {
-      res.status(400).json({ error: 'MISSING_TEXT' });
+      res.status(400).json({ error: 'MISSING_TEXT', received: req.body });
       return;
     }
     try {
@@ -78,9 +52,10 @@ export const handlers = {
   },
 
   sentiment: async (req: Request, res: Response) => {
+    console.log('[SentimentAI] Received body:', JSON.stringify(req.body));
     const text = String(req.body?.text ?? '');
     if (!text) {
-      res.status(400).json({ error: 'MISSING_TEXT' });
+      res.status(400).json({ error: 'MISSING_TEXT', received: req.body });
       return;
     }
     try {
@@ -98,9 +73,10 @@ export const handlers = {
   },
 
   codeExplain: async (req: Request, res: Response) => {
+    console.log('[CodeExplainer] Received body:', JSON.stringify(req.body));
     const code = String(req.body?.code ?? req.body?.text ?? '');
     if (!code) {
-      res.status(400).json({ error: 'MISSING_CODE' });
+      res.status(400).json({ error: 'MISSING_CODE', received: req.body });
       return;
     }
     try {
@@ -135,25 +111,39 @@ export const handlers = {
   },
 
   deepResearch: async (req: Request, res: Response) => {
-    const topic = String(req.body?.topic ?? req.body?.query ?? '');
-    const { sessionId, requestId, parentJobId, emitter, depth, budget, network } = getSessionContext(req);
-    const result = await runOrchestrator(topic, emitter, budget, depth, {
-      sessionId,
-      requestId,
-      parentJobId,
-    }, network);
-    res.json({ result: result || `Research notes: ${topic}` });
+    const topic = String(req.body?.topic ?? req.body?.query ?? req.body?.text ?? '');
+    if (!topic) {
+      res.status(400).json({ error: 'MISSING_TOPIC', received: req.body });
+      return;
+    }
+    try {
+      const result = await callLlm(
+        'You are a research assistant. Provide a comprehensive, well-structured research report on the given topic. Include key findings, sources, and actionable insights. Keep it concise but thorough.',
+        `Research topic: ${topic}`,
+        500
+      );
+      res.json({ result });
+    } catch {
+      res.json({ result: `Research notes: ${topic}` });
+    }
   },
 
   coding: async (req: Request, res: Response) => {
-    const task = String(req.body?.task ?? req.body?.query ?? '');
-    const { sessionId, requestId, parentJobId, emitter, depth, budget, network } = getSessionContext(req);
-    const result = await runOrchestrator(`code review ${task}`, emitter, budget, depth, {
-      sessionId,
-      requestId,
-      parentJobId,
-    }, network);
-    res.json({ result: result || `Coding result for: ${task}` });
+    const task = String(req.body?.task ?? req.body?.query ?? req.body?.text ?? '');
+    if (!task) {
+      res.status(400).json({ error: 'MISSING_TASK', received: req.body });
+      return;
+    }
+    try {
+      const result = await callLlm(
+        'You are a senior software engineer. Review, refactor, or generate code based on the user request. Provide clean, well-commented code and a brief explanation of your changes.',
+        `Coding task: ${task}`,
+        500
+      );
+      res.json({ result });
+    } catch {
+      res.json({ result: `Coding result for: ${task}` });
+    }
   },
 
   sovereign: async (req: Request, res: Response) => {
@@ -252,7 +242,7 @@ export const handlers = {
   },
 
   marketOracle: async (req: Request, res: Response) => {
-    const asset = String(req.body?.asset ?? 'SOL');
+    const asset = String(req.body?.asset ?? req.body?.text ?? 'SOL');
     try {
       const result = await callLlm(
         'You are a crypto market analyst. Provide a plausible market analysis for the given asset. Include price estimate, trend, RSI, MACD, and key support/resistance levels. Frame as current market data.',
@@ -302,7 +292,7 @@ export const handlers = {
   },
 
   tradingBot: async (req: Request, res: Response) => {
-    const pair = String(req.body?.pair ?? 'SOL/USDC');
+    const pair = String(req.body?.pair ?? req.body?.text ?? 'SOL/USDC');
     try {
       const result = await callLlm(
         'You are a crypto trading analyst. Provide a trading signal for the given pair. Include: direction (LONG/SHORT), entry price, stop loss, take profit, and confidence percentage. Base on technical analysis patterns.',

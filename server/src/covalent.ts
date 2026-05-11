@@ -193,6 +193,7 @@ export async function enrichAgentsWithBalances(
       walletAddress: address,
       stablecoinBalance: balance?.stablecoinBalance ?? '0',
       owner: agent.owner,
+      token: (agent as any).token ?? 'PALM_USD',
     };
   });
 }

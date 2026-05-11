@@ -55,15 +55,15 @@ export async function verifyPayment(
   }
 
   // Wallet-signed direct transfer verification
-  // Retry a few times because the tx may not have propagated to our RPC yet
+  // Retry aggressively because the tx may not have propagated to our RPC yet
   let tx = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     tx = await connection.getParsedTransaction(proof.umbraSignature, {
       commitment: 'confirmed',
       maxSupportedTransactionVersion: 0,
     });
     if (tx && !tx.meta?.err) break;
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 1_200));
   }
 
   if (!tx || tx.meta?.err) {

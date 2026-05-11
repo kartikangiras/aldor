@@ -21,7 +21,7 @@ export interface PaymentActivity {
     uniqueAgents: number;
     totalVolumeSol: string;
     totalVolumePalm: string;
-    gdp: number;
+    palmVolumeUsd: number;
   };
   agentBalances: Array<{
     agent: string;
@@ -63,7 +63,7 @@ export async function fetchPaymentActivity(): Promise<PaymentActivity> {
 
   // 2. Stats from real payment data
   const stats = getPaymentStats();
-  const gdp = stats.totalPayments * 1000 + Math.floor(Number(stats.totalsByToken.PALM_USD) / 1_000_000);
+  const palmVolumeUsd = Number(stats.totalsByToken.PALM_USD) / 1_000_000;
 
   // 3. Agent balances from Solana RPC
   const agentBalances = await Promise.all(
@@ -133,7 +133,7 @@ export async function fetchPaymentActivity(): Promise<PaymentActivity> {
       uniqueAgents: stats.uniqueAgents,
       totalVolumeSol: stats.totalsByToken.SOL,
       totalVolumePalm: stats.totalsByToken.PALM_USD,
-      gdp,
+      palmVolumeUsd,
     },
     agentBalances,
     velocity: buckets,

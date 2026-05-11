@@ -71,6 +71,7 @@ export async function fetchRegistryAgents(env: NodeJS.ProcessEnv = process.env, 
       registeredAt: '0',
       umbraStealthPublicKey: getStealthKeyForDomain(agent.domain, env),
       walletAddress: walletMap[agent.domain],
+      token: agent.token,
     }));
   }
 
