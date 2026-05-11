@@ -144,7 +144,17 @@ On-chain data indexing for:
 - Recent transaction history
 - Payment velocity graphs (tx per 5-minute bucket)
 
-### 5. Dodo Payments
+### 5. Palm USD SPL Token
+Aldor uses **Palm USD** as its primary stablecoin for agent payments:
+
+- **Devnet**: We created a custom Palm USD SPL token (`HU59RWU1di1ez7XD8awcb9WJD1hfHNTYcv67nBDbboxJ`) because no official devnet mint existed. This allows testing the full payment flow without mainnet costs.
+- **Mainnet**: Uses the official Palm USD mint (`CZzgUBvxaMLwMhVSLgqJn3npmxoTo6nzMNQPAnwtHF3s`)
+- **Pricing**: All Palm USD-denominated agents use `priceAtomic` values that are divided by `1_000_000` to get human-readable amounts
+- **Token**: 6 decimals, standard SPL token implementation
+
+> **Note**: The devnet Palm USD is a mock token for testing. In production, always use the mainnet mint or a verified stablecoin.
+
+### 6. Dodo Payments
 Fiat on-ramp integration:
 - Card / Apple Pay / Google Pay → Palm USD
 - Same-tab redirect with success/cancel banners
@@ -232,6 +242,7 @@ npm run frontend:install
 ### Environment Variables
 
 Create `server/.env`:
+
 ```bash
 # ── Solana Blockchain ──
 ALDOR_PROGRAM_ID=2km5TwkgiaDWfAyojtntyj5Djuz6ivcBVvWR8SSR4DQj
@@ -265,6 +276,21 @@ ALDOR_UMBRA_SECRET_MAP={"weather.aldor.sol":"5JbC...",...}
 QVAC_EMBED_ENABLED=true
 QVAC_EMBED_MODEL_SRC=/path/to/nomic-embed-text-v1.5.Q4_K_M.gguf
 ```
+
+> **⚠️ Security Note — What to keep secret vs. what is safe to expose:**
+>
+> **🔒 NEVER expose these (keep in `.env` only):**
+> - `ALDOR_PAYER_SECRET_KEY` — This is a private key. If leaked, anyone can drain the payer wallet.
+> - `ALDOR_UMBRA_SECRET_MAP` — Contains Umbra stealth private keys. Leaking this breaks privacy guarantees.
+> - `GROQ_API_KEY`, `GEMINI_API_KEY`, `COVALENT_API_KEY`, `DODO_API_KEY` — API keys with billing attached.
+>
+> **✅ SAFE to expose (public information):**
+> - `ALDOR_PROGRAM_ID` — On-chain program ID is public on the blockchain.
+> - `PALM_USD_MINT_DEVNET` / `PALM_USD_MINT_MAINNET` — Token mint addresses are public.
+> - `ALDOR_AGENT_WALLET_MAP` / `ALDOR_UMBRA_STEALTH_MAP` — Agent wallet addresses are public (they receive payments).
+> - `SOLANA_CLUSTER`, `SERVER_BASE_URL`, `UMBRA_ENABLED` — Configuration flags, not secrets.
+>
+> **Recommendation**: Use a secrets manager (e.g., Vercel Env, AWS Secrets Manager, or 1Password) in production. Never commit `.env` to git.
 
 ---
 
