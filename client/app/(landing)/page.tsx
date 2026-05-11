@@ -5,10 +5,15 @@ import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import AldorLogo from '@/components/AldorLogo';
 import ClientOnly from '@/components/ClientOnly';
+
+const WalletMultiButton = dynamic(
+  async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+  { ssr: false }
+);
 import {
   ArrowRight, BarChart3, Bot, Cpu, Globe, MessageCircle,
   Shield, Zap, Wallet, Terminal, ChevronRight, Layers, Lock,
@@ -78,11 +83,11 @@ function WalletConnectButton() {
   const { publicKey, connected } = useWallet();
   if (connected && publicKey) {
     return (
-      <Link href="/home">
-        <Button size="sm" className="gap-2 bg-aldor-emerald hover:bg-aldor-emerald-dim text-white border-0 rounded-full px-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.3)]">
+      <Button asChild size="sm" className="gap-2 bg-aldor-emerald hover:bg-aldor-emerald-dim text-white border-0 rounded-full px-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.3)]">
+        <Link href="/home">
           <Wallet size={14} /> Launch Dashboard
-        </Button>
-      </Link>
+        </Link>
+      </Button>
     );
   }
   return (
@@ -150,11 +155,11 @@ export default function LandingPage() {
             <ClientOnly>
               <WalletMultiButton style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa)', color: '#fff', fontWeight: 600, fontSize: '14px', padding: '12px 28px', borderRadius: '999px', border: 'none', cursor: 'pointer', height: '48px' }} />
             </ClientOnly>
-            <Link href="/docs">
-              <Button variant="outline" size="lg" className="rounded-full gap-2 border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.06] hover:border-white/15 transition-all">
+            <Button asChild variant="outline" size="lg" className="rounded-full gap-2 border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.06] hover:border-white/15 transition-all">
+              <Link href="/docs">
                 Documentation <ArrowRight size={14} />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </motion.div>
         </div>
       </section>
@@ -281,11 +286,11 @@ export default function LandingPage() {
               <ClientOnly>
                 <WalletMultiButton style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa)', color: '#fff', fontWeight: 600, fontSize: '14px', padding: '12px 28px', borderRadius: '999px', border: 'none', cursor: 'pointer', height: '48px' }} />
               </ClientOnly>
-              <Link href="/docs">
-                <Button variant="outline" size="lg" className="rounded-full gap-2 border-white/10 bg-white/[0.03] text-white/50 hover:text-white hover:bg-white/[0.06]">
+              <Button asChild variant="outline" size="lg" className="rounded-full gap-2 border-white/10 bg-white/[0.03] text-white/50 hover:text-white hover:bg-white/[0.06]">
+                <Link href="/docs">
                   Read the Docs <ArrowRight size={14} />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </motion.div>
         </div>

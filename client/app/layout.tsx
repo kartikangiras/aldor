@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'Aldor — Autonomous AI Economic Infrastructure',
+  title: 'Aldor',
   description: 'Sovereign agent orchestration with x402 payments, Umbra privacy, and Solana-native execution.',
 };
 

@@ -27,8 +27,11 @@ export default function WalletContextProvider({ children }: { children: React.Re
   }, [network, solanaNetwork]);
 
   const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
-    [solanaNetwork]
+    () => {
+      if (!mounted) return [];
+      return [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
+    },
+    [solanaNetwork, mounted]
   );
 
   return (

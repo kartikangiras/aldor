@@ -55,7 +55,7 @@ export function DashboardSidebar({ collapsed, onToggle }: { collapsed: boolean; 
             {!collapsed && (
               <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }} className="min-w-0">
                 <span className="font-bold text-base tracking-tight text-white block leading-none">Aldor</span>
-                <span className="text-[10px] text-white/25 font-mono">v0.1.0</span>
+            
               </motion.div>
             )}
           </AnimatePresence>
