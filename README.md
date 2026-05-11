@@ -470,3 +470,5 @@ MIT — Built for the Solana community.
 - **x402** — Payment protocol
 
 **Built with ❤️ on Solana.**
+
+**Note:** This project currently supports **devnet only** (tested on devnet). It can support **mainnet** if you provide real mainnet API keys and configure the appropriate mainnet RPC endpoints and token mints.
