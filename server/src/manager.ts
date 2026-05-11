@@ -10,6 +10,7 @@ import type { AgentDefinition, StepEvent, X402Challenge } from './eventtypes.js'
 import { recordJobOutcomeOnChain } from './reputation.js';
 import { runQvacEmbedding } from './qvac.js';
 import { requestWalletPayment } from './walletPayments.js';
+import { getAgentWalletForDomain } from './wallets.js';
 
 interface PlannedTask {
   agent: string;
@@ -27,7 +28,8 @@ function now(): string {
   return new Date().toISOString();
 }
 
-function emit(emitter: EventEmitter, event: Omit<StepEvent, 'timestamp'>): void {
+function emit(emitter: EventEmitter | undefined, event: Omit<StepEvent, 'timestamp'>): void {
+  if (!emitter) return;
   emitter.emit('step', { ...event, timestamp: now() } satisfies StepEvent);
 }
 
@@ -244,7 +246,7 @@ async function planWithGroq(query: string, depth: number): Promise<PlannedTask[]
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL ?? 'llama-3.1-70b-versatile',
+        model: process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: user },
@@ -278,7 +280,7 @@ async function planWithGemini(query: string, depth: number): Promise<PlannedTask
   const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-1.5-flash'}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-2.0-flash-exp'}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,7 +326,7 @@ async function planWithAnthropic(query: string, depth: number): Promise<PlannedT
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-20241022',
+        model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
         max_tokens: 500,
         temperature: 0.2,
         system,
@@ -347,9 +349,52 @@ async function planWithAnthropic(query: string, depth: number): Promise<PlannedT
   }
 }
 
-async function planTasks(query: string, depth: number): Promise<PlannedTask[]> {
-  const qvacTasks = await planWithQvacEmbeddings(query, depth).catch(() => []);
-  if (qvacTasks.length > 0) return qvacTasks;
+async function planTasks(query: string, depth: number, emitter?: EventEmitter, ctx?: { requestId?: string; jobId?: string; parentJobId?: string; sessionId?: string }): Promise<PlannedTask[]> {
+  if ((process.env.QVAC_EMBED_ENABLED ?? 'false').toLowerCase() === 'true' && depth === 0) {
+    emit(emitter, {
+      type: 'QVAC_EMBEDDING',
+      depth,
+      message: 'Running local QVAC embedding to match query against agent descriptions',
+      requestId: ctx?.requestId,
+      jobId: ctx?.jobId,
+      parentJobId: ctx?.parentJobId,
+      sessionId: ctx?.sessionId,
+    });
+    const qvacTasks = await planWithQvacEmbeddings(query, depth).catch((err) => {
+      emit(emitter, {
+        type: 'QVAC_EMBEDDING_FAILED',
+        depth,
+        message: err?.message ?? 'QVAC embedding failed',
+        requestId: ctx?.requestId,
+        jobId: ctx?.jobId,
+        parentJobId: ctx?.parentJobId,
+        sessionId: ctx?.sessionId,
+      });
+      return [] as PlannedTask[];
+    });
+    if (qvacTasks.length > 0) {
+      emit(emitter, {
+        type: 'QVAC_MATCHED',
+        depth,
+        agent: qvacTasks[0]?.agent,
+        message: `QVAC selected ${qvacTasks[0]?.agent} via cosine similarity`,
+        requestId: ctx?.requestId,
+        jobId: ctx?.jobId,
+        parentJobId: ctx?.parentJobId,
+        sessionId: ctx?.sessionId,
+      });
+      return qvacTasks;
+    }
+    emit(emitter, {
+      type: 'QVAC_SKIPPED',
+      depth,
+      message: 'QVAC returned no match, falling back to LLM planner',
+      requestId: ctx?.requestId,
+      jobId: ctx?.jobId,
+      parentJobId: ctx?.parentJobId,
+      sessionId: ctx?.sessionId,
+    });
+  }
 
   // Chain: Groq -> Gemini -> Anthropic -> ruleBased
   const groqTasks = await planWithGroq(query, depth).catch(() => []);
@@ -389,6 +434,7 @@ function chooseAgent(agentName: string): AgentDefinition {
 
 function buildX402Challenge(agent: AgentDefinition, netConfig: any): X402Challenge {
   const mint = agent.token === 'SOL' ? 'SOL' : netConfig.palmUsdMint;
+  const recipientWallet = getAgentWalletForDomain(agent.domain) ?? undefined;
   return {
     x402Version: 1,
     recipient: agent.domain,
@@ -399,7 +445,7 @@ function buildX402Challenge(agent: AgentDefinition, netConfig: any): X402Challen
     description: agent.description,
     resource: `${serverConfig.serverBaseUrl}${agent.path}`,
     paymentMode: serverConfig.paymentMode,
-    recipientWallet: serverConfig.paymentMode === 'wallet' ? undefined : undefined,
+    recipientWallet,
     mint,
     decimals: agent.token === 'SOL' ? 9 : 6,
   };
@@ -436,7 +482,7 @@ export async function runOrchestrator(
     parentJobId,
     sessionId: context.sessionId,
   });
-  const tasks = await planTasks(query, depth);
+  const tasks = await planTasks(query, depth, emitter, { requestId, jobId: runJobId, parentJobId, sessionId: context.sessionId });
   emit(emitter, {
     type: 'PLAN_CREATED',
     depth,
@@ -639,7 +685,9 @@ export async function runOrchestrator(
         headers['X-Aldor-Payment-Signature'] = paymentSignature;
         headers['X-Aldor-Payer'] = payerPublicKey;
       }
+      console.log(`[Manager] Calling ${agent.path} for ${agent.name} with payment sig: ${paymentSignature?.slice(0, 16) ?? 'none'}`);
       response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, { headers });
+      console.log(`[Manager] ${agent.name} responded: ${JSON.stringify(response.data).slice(0, 200)}`);
     } catch (error: any) {
       const raw = error?.message ?? String(error);
       const isUmbraError =

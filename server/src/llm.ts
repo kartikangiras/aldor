@@ -24,7 +24,7 @@ async function callGroq(messages: LlmMessage[], maxTokens = 500): Promise<string
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL ?? 'llama-3.1-70b-versatile',
+        model: process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
         messages,
         temperature: 0.7,
         max_tokens: maxTokens,
@@ -62,7 +62,7 @@ async function callGemini(messages: LlmMessage[], maxTokens = 500): Promise<stri
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-1.5-flash'}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-2.0-flash-exp'}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +106,7 @@ async function callAnthropic(messages: LlmMessage[], maxTokens = 500): Promise<s
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-20241022',
+        model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-20241022',
         max_tokens: maxTokens,
         temperature: 0.7,
         system: messages.find((m) => m.role === 'system')?.content,

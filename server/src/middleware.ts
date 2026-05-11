@@ -62,6 +62,7 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
     };
     const valid = await verifyFn(proof, cfg, networkHint);
     if (!valid) {
+      console.warn(`[x402] Payment verification failed for ${cfg.snsDomain}. Signature: ${signature.slice(0, 16)}...`);
       res.status(402).json({ error: 'PAYMENT_INVALID' });
       return;
     }

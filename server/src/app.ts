@@ -14,12 +14,14 @@ import { fundAgentViaDodo, offRampEarnings } from '../../sdk/src/dodo.js';
 import { getAgentWalletForDomain, getAgentWalletMap, isValidSolanaAddress } from './wallets.js';
 import { getUmbraSecretForDomain } from './umbra.js';
 import { getPaymentStats, listPayments } from './ledger.js';
-import { fetchRegistryAgents } from './registry.js';
+import { fetchRegistryAgents, getStealthKeyForDomain } from './registry.js';
 import { seedRegistryAgents } from './registrySeed.js';
 import { fetchPalmUsdCirculation } from './palmusd.js';
 import { runIntegrationDiagnostics } from './diagnostics.js';
 import { networkFromRequest } from './network.js';
-import { fulfillWalletPayment, listPendingPayments } from './walletPayments.js';
+import { fulfillWalletPayment, cancelWalletPayment, listPendingPayments } from './walletPayments.js';
+import { fetchPaymentActivity } from './analytics.js';
+import { checkDodoHealth } from '../../sdk/src/dodo.js';
 
 function asyncHandler<T extends express.RequestHandler>(fn: T): express.RequestHandler {
   return (req, res, next) => {
@@ -125,7 +127,33 @@ export function createApp() {
   app.get('/api/agents', asyncHandler(async (req, res) => {
     const netConfig = networkFromRequest(req);
     const registryAgents = await fetchRegistryAgents(process.env, netConfig.solanaRpcUrl);
-    const enriched = await enrichAgentsWithBalances(registryAgents, netConfig.palmUsdMint, netConfig.solanaCluster);
+    const walletMap = getAgentWalletMap(process.env);
+
+    // Merge on-chain registry with hardcoded agents so all known agents always appear
+    const registryMap = new Map(registryAgents.map((a) => [a.snsDomain, a]));
+    const merged = AGENTS.map((agent) => {
+      const onChain = registryMap.get(agent.domain);
+      if (onChain) return onChain;
+      return {
+        snsDomain: agent.domain,
+        name: agent.name,
+        category: agent.category,
+        priceMicroStablecoin: String(agent.priceAtomic),
+        reputationBps: String(agent.reputation),
+        totalJobs: '0',
+        successfulJobs: '0',
+        isActive: true,
+        isRecursive: agent.recursive,
+        capabilities: [agent.category],
+        description: agent.description,
+        owner: walletMap[agent.domain] ?? '',
+        registeredAt: '0',
+        umbraStealthPublicKey: getStealthKeyForDomain(agent.domain, process.env),
+        walletAddress: walletMap[agent.domain],
+      };
+    });
+
+    const enriched = await enrichAgentsWithBalances(merged, netConfig.palmUsdMint, netConfig.solanaCluster);
     res.json(enriched);
   }));
 
@@ -199,25 +227,78 @@ export function createApp() {
     res.json(circulation);
   }));
 
+  app.get('/api/analytics/payment-activity', asyncHandler(async (_req, res) => {
+    const activity = await fetchPaymentActivity();
+    res.json(activity);
+  }));
+
   app.get('/api/integrations/diagnostics', asyncHandler(async (req, res) => {
     const diagnostics = await runIntegrationDiagnostics(process.env);
     res.status(diagnostics.ok ? 200 : 503).json(diagnostics);
+  }));
+
+  app.get('/api/dodo/health', asyncHandler(async (_req, res) => {
+    const health = await checkDodoHealth(process.env);
+    res.status(health.ok ? 200 : 503).json(health);
+  }));
+
+  // Debug endpoint: test Dodo auth directly and return raw response
+  app.get('/api/dodo/debug', asyncHandler(async (_req, res) => {
+    const { probeDodoAuth } = await import('../../sdk/src/dodo.js');
+    const result = await probeDodoAuth(process.env);
+    res.json(result);
+  }));
+
+  // Raw Dodo test — lets you try any endpoint with any header
+  app.get('/api/dodo/probe', asyncHandler(async (req, res) => {
+    const endpoint = String(req.query.endpoint ?? '/payments');
+    const authStyle = String(req.query.auth ?? 'Bearer');
+    const apiKey = process.env.DODO_API_KEY;
+    const baseUrl = (process.env.DODO_API_BASE_URL ?? 'https://test.dodopayments.com').replace(/\/$/, '');
+
+    if (!apiKey) {
+      res.status(400).json({ error: 'DODO_API_KEY not set' });
+      return;
+    }
+
+    let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    switch (authStyle) {
+      case 'Bearer': headers.Authorization = `Bearer ${apiKey}`; break;
+      case 'Plain': headers.Authorization = apiKey; break;
+      case 'Dodo-Api-Key': headers['Dodo-Api-Key'] = apiKey; break;
+      case 'X-API-Key': headers['X-API-Key'] = apiKey; break;
+      case 'Api-Key': headers['Api-Key'] = apiKey; break;
+      default: headers.Authorization = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(`${baseUrl}${endpoint}`, { method: 'GET', headers });
+    const text = await response.text();
+
+    res.json({
+      url: `${baseUrl}${endpoint}`,
+      authStyle,
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      body: text.slice(0, 500),
+    });
   }));
 
   app.post('/api/dodo/fund', asyncHandler(async (req, res) => {
     const amountUsd = Number(req.body?.amountUsd ?? 0);
     const walletAddress = String(req.body?.walletAddress ?? '');
     const customerData = req.body?.customerData ?? { email: 'guest@example.com', name: 'Guest User', countryCode: 'US' };
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : undefined;
+    const cancelUrl = req.body?.cancelUrl ? String(req.body.cancelUrl) : undefined;
     if (!Number.isFinite(amountUsd) || amountUsd <= 0 || !walletAddress) {
       res.status(400).json({ error: 'INVALID_REQUEST' });
       return;
     }
     if (!process.env.DODO_API_KEY || process.env.DODO_API_KEY === 'replace_me') {
-      res.status(503).json({ error: 'DODO_UNAVAILABLE', message: 'DODO_API_KEY is not configured.' });
+      res.status(503).json({ error: 'DODO_UNAVAILABLE', message: 'DODO_API_KEY is not configured. Set it in server/.env' });
       return;
     }
     try {
-      const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress, customerData);
+      const urlOrId = await fundAgentViaDodo(amountUsd, walletAddress, customerData, returnUrl, cancelUrl);
       res.json({ payment: urlOrId });
     } catch (error: any) {
       res.status(503).json({
@@ -248,6 +329,40 @@ export function createApp() {
         message: error?.message ?? 'Dodo request failed',
       });
     }
+  }));
+
+  // Dodo webhook handler for payment confirmations
+  app.post('/api/dodo/webhook', asyncHandler(async (req, res) => {
+    // TODO: verify webhook signature when Dodo provides signing secret
+    const event = req.body as {
+      event_type?: string;
+      payment?: {
+        payment_id?: string;
+        status?: string;
+        metadata?: Record<string, unknown>;
+        total_amount?: number;
+        currency?: string;
+      };
+    };
+
+    const eventType = event?.event_type ?? 'unknown';
+    const payment = event?.payment;
+
+    console.log('[DodoWebhook]', eventType, JSON.stringify(payment));
+
+    if (eventType === 'payment.success' && payment) {
+      const walletAddress = String(payment.metadata?.solana_wallet ?? '');
+      const amountCents = Number(payment.total_amount ?? 0);
+      const amountUsd = amountCents / 100;
+
+      if (walletAddress && amountUsd > 0) {
+        console.log(`[DodoWebhook] Funding confirmed: ${amountUsd} USD -> ${walletAddress} (payment_id: ${payment.payment_id})`);
+        // TODO: trigger on-chain token mint/transfer to walletAddress
+      }
+    }
+
+    // Acknowledge receipt immediately
+    res.json({ received: true });
   }));
 
   app.post('/api/agent/query', asyncHandler(async (req, res) => {
@@ -292,6 +407,26 @@ export function createApp() {
     }
 
     res.json({ ok: true, requestId });
+  }));
+
+  // Wallet payment rejection (user declined in UI or wallet)
+  app.post('/api/agent/pay/reject', asyncHandler(async (req, res) => {
+    const requestId = String(req.body?.requestId ?? '');
+    const reason = String(req.body?.reason ?? 'USER_REJECTED');
+
+    if (!requestId) {
+      res.status(400).json({ error: 'MISSING_REQUEST_ID' });
+      return;
+    }
+
+    const cancelled = cancelWalletPayment(requestId, reason);
+
+    if (!cancelled) {
+      res.status(404).json({ error: 'REQUEST_NOT_FOUND', message: 'No pending payment found for this requestId' });
+      return;
+    }
+
+    res.json({ ok: true, requestId, reason });
   }));
 
   app.get('/api/agent/payments/pending', (_req, res) => {
