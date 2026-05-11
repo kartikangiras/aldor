@@ -13,8 +13,13 @@ export function createPaidAxios(options: InterceptorOptions): AxiosInstance {
 
   instance.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
-    config.headers['X-Aldor-Max-Depth'] = String(options.budget.maxDepth);
-    config.headers['X-Aldor-Budget-Remaining'] = options.budget.budgetRemaining;
+    // Only set defaults if not already provided by the caller
+    if (!config.headers['X-Aldor-Max-Depth']) {
+      config.headers['X-Aldor-Max-Depth'] = String(options.budget.maxDepth);
+    }
+    if (!config.headers['X-Aldor-Budget-Remaining']) {
+      config.headers['X-Aldor-Budget-Remaining'] = options.budget.budgetRemaining;
+    }
     return config;
   });
 
