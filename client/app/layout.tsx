@@ -11,6 +11,7 @@ const inter = Inter({
 export const metadata = {
   title: 'Aldor',
   description: 'Sovereign agent orchestration with x402 payments, Umbra privacy, and Solana-native execution.',
+  icons: { icon: '/logo.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
