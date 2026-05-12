@@ -1,7 +1,7 @@
 import { BorshAccountsCoder, type Idl } from '@coral-xyz/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
-import idl from '../../target/idl/aldor.json' with { type: 'json' };
+import idl from '../../sdk/src/aldorIdl.js';
 import { AGENTS } from './agents.js';
 import { serverConfig } from './config.js';
 import { getAgentWalletMap } from './wallets.js';

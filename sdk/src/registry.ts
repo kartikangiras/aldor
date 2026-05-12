@@ -1,7 +1,7 @@
 import { AnchorProvider, BorshAccountsCoder, type Idl, Wallet } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
-import idl from '../../target/idl/aldor.json' with { type: 'json' };
+import idl from './aldorIdl.js';
 
 export interface AgentRegistryRecord {
   owner: string;

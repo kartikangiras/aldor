@@ -2,7 +2,7 @@ import anchorPkg from '@coral-xyz/anchor';
 import type { Idl } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import bs58 from 'bs58';
-import idl from '../../target/idl/aldor.json' with { type: 'json' };
+import idl from '../../sdk/src/aldorIdl.js';
 import { AGENTS } from './agents.js';
 import { serverConfig } from './config.js';
 import { getStealthKeyForDomain } from './registry.js';

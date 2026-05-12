@@ -10,3 +10,4 @@ client/.env.example
 models/
 iamges/
 client/public
+DEPLOYMENT.md
