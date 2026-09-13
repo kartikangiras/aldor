@@ -45,8 +45,8 @@ export interface InterceptorOptions {
     signChallenge: (challenge: X402Accept) => Promise<PaymentProof>;
     budget: BudgetPolicy;
 }
-export interface AragornAxiosRequestConfig extends AxiosRequestConfig {
-    _aragornRetried?: boolean;
+export interface AldorAxiosRequestConfig extends AxiosRequestConfig {
+    _aldorRetried?: boolean;
 }
 export interface PaidResponse<T = unknown> extends AxiosResponse<T> {
     paymentProof?: PaymentProof;

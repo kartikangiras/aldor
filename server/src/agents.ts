@@ -3,7 +3,7 @@ import type { AgentDefinition } from './eventtypes.js';
 export const AGENTS: AgentDefinition[] = [
   {
     name: 'WeatherBot',
-    domain: 'weather.aragorn.sol',
+    domain: 'weather.aldor.sol',
     path: '/api/weather',
     category: 'utility',
     token: 'SOL',
@@ -14,7 +14,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'Summarizer',
-    domain: 'summarizer.aragorn.sol',
+    domain: 'summarizer.aldor.sol',
     path: '/api/summarize',
     category: 'nlp',
     token: 'SOL',
@@ -25,7 +25,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'MathSolver',
-    domain: 'math.aragorn.sol',
+    domain: 'math.aldor.sol',
     path: '/api/math-solve',
     category: 'utility',
     token: 'SOL',
@@ -36,7 +36,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'SentimentAI',
-    domain: 'sentiment.aragorn.sol',
+    domain: 'sentiment.aldor.sol',
     path: '/api/sentiment',
     category: 'nlp',
     token: 'SOL',
@@ -47,7 +47,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'CodeExplainer',
-    domain: 'code-explainer.aragorn.sol',
+    domain: 'code-explainer.aldor.sol',
     path: '/api/code-explain',
     category: 'code',
     token: 'SOL',
@@ -58,7 +58,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'TranslateBot',
-    domain: 'translate.aragorn.sol',
+    domain: 'translate.aldor.sol',
     path: '/api/agent/translate',
     category: 'nlp',
     token: 'SOL',
@@ -69,7 +69,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'DeepResearch',
-    domain: 'research.aragorn.sol',
+    domain: 'research.aldor.sol',
     path: '/api/agent/research',
     category: 'research',
     token: 'SOL',
@@ -80,7 +80,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'CodingAgent',
-    domain: 'coding.aragorn.sol',
+    domain: 'coding.aldor.sol',
     path: '/api/agent/code',
     category: 'code',
     token: 'SOL',
@@ -91,7 +91,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'SovereignSpecialist',
-    domain: 'sovereign.aragorn.sol',
+    domain: 'sovereign.aldor.sol',
     path: '/api/agent/sovereign',
     category: 'qvac',
     token: 'SOL',
@@ -102,7 +102,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'DataAnalyst',
-    domain: 'data.aragorn.sol',
+    domain: 'data.aldor.sol',
     path: '/api/agent/data',
     category: 'analytics',
     token: 'SOL',
@@ -113,7 +113,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'ContractAuditor',
-    domain: 'audit.aragorn.sol',
+    domain: 'audit.aldor.sol',
     path: '/api/agent/audit',
     category: 'security',
     token: 'SOL',
@@ -124,7 +124,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'DeFiStrategist',
-    domain: 'defi.aragorn.sol',
+    domain: 'defi.aldor.sol',
     path: '/api/agent/defi',
     category: 'finance',
     token: 'SOL',
@@ -135,7 +135,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'ImageGenerator',
-    domain: 'image.aragorn.sol',
+    domain: 'image.aldor.sol',
     path: '/api/agent/image',
     category: 'creative',
     token: 'SOL',
@@ -146,7 +146,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'MarketOracle',
-    domain: 'oracle.aragorn.sol',
+    domain: 'oracle.aldor.sol',
     path: '/api/agent/oracle',
     category: 'finance',
     token: 'SOL',
@@ -157,7 +157,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'LegalAdvisor',
-    domain: 'legal.aragorn.sol',
+    domain: 'legal.aldor.sol',
     path: '/api/agent/legal',
     category: 'legal',
     token: 'SOL',
@@ -168,7 +168,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'SocialMediaBot',
-    domain: 'social.aragorn.sol',
+    domain: 'social.aldor.sol',
     path: '/api/agent/social',
     category: 'marketing',
     token: 'SOL',
@@ -179,7 +179,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'TradingBot',
-    domain: 'trading.aragorn.sol',
+    domain: 'trading.aldor.sol',
     path: '/api/agent/trading',
     category: 'finance',
     token: 'SOL',
@@ -190,7 +190,7 @@ export const AGENTS: AgentDefinition[] = [
   },
   {
     name: 'MedicalAdvisor',
-    domain: 'medical.aragorn.sol',
+    domain: 'medical.aldor.sol',
     path: '/api/agent/medical',
     category: 'health',
     token: 'SOL',

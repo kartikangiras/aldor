@@ -2,7 +2,7 @@ import anchorPkg from '@coral-xyz/anchor';
 import type { Idl } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import bs58 from 'bs58';
-import idl from '../../sdk/src/aragornIdl.js';
+import idl from '../../sdk/src/aldorIdl.js';
 import { AGENTS } from './agents.js';
 import { serverConfig } from './config.js';
 import { getStealthKeyForDomain } from './registry.js';
@@ -17,7 +17,7 @@ const { AnchorProvider, Program, Wallet, BN } = anchorPkg as typeof anchorPkg;
 
 function parsePayerSecret(secret: string): Uint8Array {
   if (!secret) {
-    throw new Error('ARAGORN_PAYER_SECRET_KEY is required to seed the registry');
+    throw new Error('ALDOR_PAYER_SECRET_KEY is required to seed the registry');
   }
   if (secret.trim().startsWith('[')) {
     return Uint8Array.from(JSON.parse(secret));

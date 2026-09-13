@@ -121,7 +121,7 @@ export default function AgentsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Agent Marketplace</h1>
-          <p className="text-sm text-aragorn-text-secondary">Hire and manage autonomous economic agents</p>
+          <p className="text-sm text-aldor-text-secondary">Hire and manage autonomous economic agents</p>
         </div>
         <Button className="gap-2" onClick={() => setSearch('')}>
           <Zap size={16} />
@@ -131,9 +131,9 @@ export default function AgentsPage() {
 
       {/* Dodo Status Banners */}
       {fundedAgent && (
-        <Card className="border-aragorn-emerald/30 bg-aragorn-emerald/5">
+        <Card className="border-aldor-emerald/30 bg-aldor-emerald/5">
           <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-aragorn-emerald">
+            <div className="flex items-center gap-2 text-sm text-aldor-emerald">
               <CheckCircle2 size={16} />
               <span>Support sent to <strong>{agents.find((a) => a.snsDomain === fundedAgent)?.name ?? fundedAgent}</strong>! Note: hiring this agent for a task still requires a wallet payment when you submit your query.</span>
             </div>
@@ -153,8 +153,8 @@ export default function AgentsPage() {
       )}
 
       {cancelled && (
-        <Card className="border-aragorn-rose/30 bg-aragorn-rose/5">
-          <CardContent className="p-4 flex items-center gap-2 text-sm text-aragorn-rose">
+        <Card className="border-aldor-rose/30 bg-aldor-rose/5">
+          <CardContent className="p-4 flex items-center gap-2 text-sm text-aldor-rose">
             <AlertCircle size={16} />
             <span>Payment was cancelled. No funds were charged.</span>
           </CardContent>
@@ -164,13 +164,13 @@ export default function AgentsPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-aragorn-text-muted" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-aldor-text-muted" />
           <Input
             type="text"
             placeholder="Search agents..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-aragorn-surface border-aragorn-border"
+            className="pl-10 bg-aldor-surface border-aldor-border"
           />
         </div>
         <Button
@@ -189,15 +189,15 @@ export default function AgentsPage() {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-12 text-aragorn-text-muted">
+        <div className="flex items-center justify-center py-12 text-aldor-text-muted">
           <Loader2 size={24} className="animate-spin mr-2" />
           Loading agents...
         </div>
       )}
 
       {error && !loading && (
-        <Card className="border-aragorn-rose/30 bg-aragorn-rose/10">
-          <CardContent className="p-4 text-sm text-aragorn-rose">{error}</CardContent>
+        <Card className="border-aldor-rose/30 bg-aldor-rose/10">
+          <CardContent className="p-4 text-sm text-aldor-rose">{error}</CardContent>
         </Card>
       )}
 
@@ -216,7 +216,7 @@ export default function AgentsPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-sm">{agent.name}</h3>
-                      <p className="text-xs text-aragorn-text-muted">{agent.snsDomain}</p>
+                      <p className="text-xs text-aldor-text-muted">{agent.snsDomain}</p>
                     </div>
                   </div>
                   <Badge variant={agent.isActive ? 'default' : 'secondary'} className="text-xs">
@@ -226,12 +226,12 @@ export default function AgentsPage() {
 
                 <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                   <div>
-                    <p className="text-xs text-aragorn-text-muted">Category</p>
+                    <p className="text-xs text-aldor-text-muted">Category</p>
                     <p>{agent.category || 'General'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-aragorn-text-muted">Price</p>
-                    <p className="font-mono text-aragorn-emerald">
+                    <p className="text-xs text-aldor-text-muted">Price</p>
+                    <p className="font-mono text-aldor-emerald">
                       {(Number(agent.priceMicroStablecoin) / 1_000_000_000).toFixed(4)} SOL
                     </p>
                   </div>
@@ -279,7 +279,7 @@ export default function AgentsPage() {
       </div>
 
       {!loading && filteredAgents.length === 0 && (
-        <div className="text-center py-12 text-aragorn-text-muted text-sm">No agents found.</div>
+        <div className="text-center py-12 text-aldor-text-muted text-sm">No agents found.</div>
       )}
     </div>
   );

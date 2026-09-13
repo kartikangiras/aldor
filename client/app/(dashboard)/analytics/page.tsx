@@ -59,24 +59,24 @@ export default function AnalyticsPage() {
       value: String(activity?.stats.totalPayments ?? stats?.totalPayments ?? 0),
       change: '+live',
       icon: DollarSign,
-      color: 'text-aragorn-emerald',
-      bg: 'bg-aragorn-emerald/10',
+      color: 'text-aldor-emerald',
+      bg: 'bg-aldor-emerald/10',
     },
     {
       label: 'Active Agents',
       value: String(activity?.stats.uniqueAgents ?? stats?.uniqueAgents ?? 0),
       change: '+live',
       icon: Bot,
-      color: 'text-aragorn-purple-bright',
-      bg: 'bg-aragorn-purple/10',
+      color: 'text-aldor-purple-bright',
+      bg: 'bg-aldor-purple/10',
     },
     {
       label: 'Volume (SOL)',
       value: activity?.stats.totalVolumeSol ?? '0',
       change: '+live',
       icon: Activity,
-      color: 'text-aragorn-cyan',
-      bg: 'bg-aragorn-cyan/10',
+      color: 'text-aldor-cyan',
+      bg: 'bg-aldor-cyan/10',
     },
   ];
 
@@ -84,19 +84,19 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Live Analytics</h1>
-        <p className="text-sm text-aragorn-text-secondary">Covalent-powered on-chain analytics</p>
+        <p className="text-sm text-aldor-text-secondary">Covalent-powered on-chain analytics</p>
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-8 text-aragorn-text-muted">
+        <div className="flex items-center justify-center py-8 text-aldor-text-muted">
           <Loader2 size={24} className="animate-spin mr-2" />
           Loading analytics...
         </div>
       )}
 
       {error && !loading && (
-        <Card className="border-aragorn-rose/30 bg-aragorn-rose/10">
-          <CardContent className="p-4 text-sm text-aragorn-rose">{error}</CardContent>
+        <Card className="border-aldor-rose/30 bg-aldor-rose/10">
+          <CardContent className="p-4 text-sm text-aldor-rose">{error}</CardContent>
         </Card>
       )}
 
@@ -104,21 +104,21 @@ export default function AnalyticsPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {statCards.map((stat) => (
-              <Card key={stat.label} className="border-aragorn-border bg-aragorn-graphite/60">
+              <Card key={stat.label} className="border-aldor-border bg-aldor-graphite/60">
                 <CardContent className="p-5">
                   <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                     <stat.icon size={18} className={stat.color} />
                   </div>
                   <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-aragorn-text-muted">{stat.label}</p>
-                  <p className="text-xs text-aragorn-emerald mt-1">{stat.change}</p>
+                  <p className="text-xs text-aldor-text-muted">{stat.label}</p>
+                  <p className="text-xs text-aldor-emerald mt-1">{stat.change}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-aragorn-border bg-aragorn-graphite/60 min-h-[300px]">
+            <Card className="border-aldor-border bg-aldor-graphite/60 min-h-[300px]">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold">Payment Velocity</CardTitle>
               </CardHeader>
@@ -143,14 +143,14 @@ export default function AnalyticsPage() {
                     </ResponsiveContainer>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-48 text-aragorn-text-muted text-sm">
+                  <div className="flex items-center justify-center h-48 text-aldor-text-muted text-sm">
                     No velocity data yet.
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="border-aragorn-border bg-aragorn-graphite/60 min-h-[300px]">
+            <Card className="border-aldor-border bg-aldor-graphite/60 min-h-[300px]">
               <CardHeader>
                 <CardTitle className="text-sm font-semibold">Agent Balances</CardTitle>
               </CardHeader>
@@ -160,22 +160,22 @@ export default function AnalyticsPage() {
                     {activity.agentBalances.map((ab) => (
                       <div
                         key={ab.agent}
-                        className="flex items-center justify-between p-2 rounded-md bg-aragorn-surface/50 border border-aragorn-border"
+                        className="flex items-center justify-between p-2 rounded-md bg-aldor-surface/50 border border-aldor-border"
                       >
                         <div>
                           <p className="text-xs font-medium">{ab.agent}</p>
-                          <p className="text-[10px] text-aragorn-text-muted font-mono truncate max-w-[180px]">
+                          <p className="text-[10px] text-aldor-text-muted font-mono truncate max-w-[180px]">
                             {ab.address}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-mono text-aragorn-emerald">{ab.solBalance} SOL</p>
+                          <p className="text-xs font-mono text-aldor-emerald">{ab.solBalance} SOL</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-48 text-aragorn-text-muted text-sm">
+                  <div className="flex items-center justify-center h-48 text-aldor-text-muted text-sm">
                     No agent balance data yet.
                   </div>
                 )}
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Recent Payments */}
-          <Card className="border-aragorn-border bg-aragorn-graphite/60">
+          <Card className="border-aldor-border bg-aldor-graphite/60">
             <CardHeader>
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <BarChart3 size={16} />
@@ -195,30 +195,30 @@ export default function AnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-aragorn-border">
-                      <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Agent</th>
-                      <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Amount</th>
-                      <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Token</th>
-                      <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Depth</th>
-                      <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3">Time</th>
+                    <tr className="border-b border-aldor-border">
+                      <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Agent</th>
+                      <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Amount</th>
+                      <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Token</th>
+                      <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Depth</th>
+                      <th className="text-left text-xs font-medium text-aldor-text-muted pb-3">Time</th>
                     </tr>
                   </thead>
                   <tbody>
                     {activity?.recentPayments?.length ? (
                       activity.recentPayments.slice(0, 10).map((item, i) => (
-                        <tr key={i} className="border-b border-aragorn-border/50 last:border-0">
+                        <tr key={i} className="border-b border-aldor-border/50 last:border-0">
                           <td className="py-3 pr-4 text-sm">{item.agent}</td>
                           <td className="py-3 pr-4 text-sm font-mono">{item.amount}</td>
                           <td className="py-3 pr-4 text-xs">{item.token}</td>
                           <td className="py-3 pr-4 text-xs">{item.depth}</td>
-                          <td className="py-3 text-xs text-aragorn-text-muted">
+                          <td className="py-3 text-xs text-aldor-text-muted">
                             {new Date(item.timestamp).toLocaleTimeString()}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="py-4 text-xs text-aragorn-text-muted text-center">
+                        <td colSpan={5} className="py-4 text-xs text-aldor-text-muted text-center">
                           No recent payments.
                         </td>
                       </tr>
@@ -230,10 +230,10 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Footer */}
-          <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aragorn-text-muted border-t border-aragorn-border">
+          <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aldor-text-muted border-t border-aldor-border">
             <span>Powered by</span>
             <img src="/covalent.png" alt="Covalent" className="w-4 h-4 rounded-sm object-contain" />
-            <span className="text-aragorn-emerald font-medium">Covalent Blockchain Analytics</span>
+            <span className="text-aldor-emerald font-medium">Covalent Blockchain Analytics</span>
           </div>
         </>
       )}

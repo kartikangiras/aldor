@@ -23,7 +23,7 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'SOL',
-        snsDomain: 'summarizer.aragorn.sol',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
@@ -41,7 +41,7 @@ describe('x402 middleware', () => {
     assert.equal(called, false);
     assert.equal(res.statusCode, 402);
     assert.equal(res.body.x402Version, 1);
-    assert.equal(res.body.recipient, 'summarizer.aragorn.sol');
+    assert.equal(res.body.recipient, 'summarizer.aldor.sol');
     assert.equal(res.body.amount, '100');
   });
 
@@ -50,14 +50,14 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'SOL',
-        snsDomain: 'summarizer.aragorn.sol',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
       async () => false,
     );
 
-    const req: any = { header: (name: string) => (name === 'X-Aragorn-Payment-Signature' ? 'fake-sig' : null) };
+    const req: any = { header: (name: string) => (name === 'X-Aldor-Payment-Signature' ? 'fake-sig' : null) };
     const res = mockRes();
 
     await mw(req, res as any, () => {});
@@ -70,14 +70,14 @@ describe('x402 middleware', () => {
       {
         priceAtomic: 100,
         tokenKind: 'SOL',
-        snsDomain: 'summarizer.aragorn.sol',
+        snsDomain: 'summarizer.aldor.sol',
         description: 'desc',
         resourcePath: '/paid',
       },
       async () => true,
     );
 
-    const req: any = { header: (name: string) => (name === 'X-Aragorn-Max-Depth' ? '4' : null) };
+    const req: any = { header: (name: string) => (name === 'X-Aldor-Max-Depth' ? '4' : null) };
     const res = mockRes();
 
     await mw(req, res as any, () => {});
@@ -90,7 +90,7 @@ describe('x402 middleware', () => {
     const sol = buildChallenge(req, {
       priceAtomic: 100,
       tokenKind: 'SOL',
-      snsDomain: 'weather.aragorn.sol',
+      snsDomain: 'weather.aldor.sol',
       description: 'desc',
       resourcePath: '/paid',
     });

@@ -49,12 +49,12 @@ export function DashboardSidebar({ collapsed, onToggle }: { collapsed: boolean; 
       <div className="flex items-center h-16 px-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <Link href="/home" className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #818cf8, #a78bfa)', boxShadow: '0 0 16px rgba(129,140,248,0.3)' }}>
-            <img src="/logo.png" alt="Aragorn" className="w-full h-full object-cover" />
+            <img src="/logo.png" alt="Aldor" className="w-full h-full object-cover" />
           </div>
           <AnimatePresence>
             {!collapsed && (
               <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }} className="min-w-0">
-                <span className="font-bold text-base tracking-tight text-white block leading-none">Aragorn</span>
+                <span className="font-bold text-base tracking-tight text-white block leading-none">Aldor</span>
             
               </motion.div>
             )}
@@ -90,7 +90,7 @@ export function DashboardSidebar({ collapsed, onToggle }: { collapsed: boolean; 
                       {isActive && (
                         <motion.div layoutId="sidebar-active-bar" className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full" style={{ background: 'linear-gradient(180deg,#818cf8,#a78bfa)', boxShadow: '0 0 8px rgba(129,140,248,0.6)' }} />
                       )}
-                      <Icon size={17} className={cn('shrink-0 transition-colors', isActive ? 'text-aragorn-emerald' : 'text-white/35 group-hover:text-white/60')} />
+                      <Icon size={17} className={cn('shrink-0 transition-colors', isActive ? 'text-aldor-emerald' : 'text-white/35 group-hover:text-white/60')} />
                       <AnimatePresence>
                         {!collapsed && (
                           <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.2 }} className="truncate font-medium whitespace-nowrap overflow-hidden">
@@ -119,17 +119,17 @@ function WalletSection({ collapsed }: { collapsed: boolean }) {
       {connected && publicKey ? (
         <div className={cn('flex items-center gap-3 px-3 py-2.5 rounded-lg', collapsed && 'justify-center px-2')} style={{ background: 'rgba(129,140,248,0.06)', border: '1px solid rgba(129,140,248,0.12)' }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(129,140,248,0.12)' }}>
-            <Wallet size={14} className="text-aragorn-emerald" />
+            <Wallet size={14} className="text-aldor-emerald" />
           </div>
           <AnimatePresence>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-w-0 flex-1">
                 <p className="text-[10px] text-white/25 leading-none mb-0.5">Connected</p>
-                <p className="text-xs text-aragorn-emerald font-mono truncate">{truncate(publicKey.toBase58(), 4)}</p>
+                <p className="text-xs text-aldor-emerald font-mono truncate">{truncate(publicKey.toBase58(), 4)}</p>
               </motion.div>
             )}
           </AnimatePresence>
-          {!collapsed && <div className="w-1.5 h-1.5 rounded-full bg-aragorn-emerald shrink-0 animate-pulse" />}
+          {!collapsed && <div className="w-1.5 h-1.5 rounded-full bg-aldor-emerald shrink-0 animate-pulse" />}
         </div>
       ) : (
         <div className={cn('flex', collapsed && 'justify-center')}>

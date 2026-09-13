@@ -10,7 +10,7 @@ const MAX_DEPTH = 3;
 type VerifyFn = (proof: PaymentProofV1, cfg: MiddlewareConfig, networkHint?: string) => Promise<boolean>;
 
 function readDepth(req: Request): number {
-  const raw = req.header('X-Aragorn-Max-Depth');
+  const raw = req.header('X-Aldor-Max-Depth');
   const parsed = Number(raw ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -46,8 +46,8 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
     const netConfig = networkFromRequest(req);
     const networkHint = netConfig.solanaCluster;
 
-    const signature = req.header('X-Aragorn-Payment-Signature') ?? req.header('X-Payment-Signature');
-    const ephemeralKey = req.header('X-Aragorn-Ephemeral-Key') ?? req.header('X-Aragorn-Payment-Ephemeral');
+    const signature = req.header('X-Aldor-Payment-Signature') ?? req.header('X-Payment-Signature');
+    const ephemeralKey = req.header('X-Aldor-Ephemeral-Key') ?? req.header('X-Aldor-Payment-Ephemeral');
     if (!signature) {
       res.status(402).json(buildChallenge(req, cfg));
       return;
@@ -56,7 +56,7 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
     const proof: PaymentProofV1 = {
       umbraSignature: signature,
       umbraEphemeralKey: ephemeralKey ?? '',
-      payer: req.header('X-Aragorn-Payer') ?? undefined,
+      payer: req.header('X-Aldor-Payer') ?? undefined,
       timestamp: Date.now(),
     };
     const valid = await verifyFn(proof, cfg, networkHint);
@@ -67,14 +67,14 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
     }
 
     const sessionId = (() => {
-      const header = req.header('X-Aragorn-Session');
+      const header = req.header('X-Aldor-Session');
       if (header) return header;
       return typeof req.query.session === 'string' ? req.query.session : undefined;
     })();
 
-    const requestId = req.header('X-Aragorn-Request-Id') ?? undefined;
-    const jobId = req.header('X-Aragorn-Job-Id') ?? undefined;
-    const parentJobId = req.header('X-Aragorn-Parent-Job-Id') ?? undefined;
+    const requestId = req.header('X-Aldor-Request-Id') ?? undefined;
+    const jobId = req.header('X-Aldor-Job-Id') ?? undefined;
+    const parentJobId = req.header('X-Aldor-Parent-Job-Id') ?? undefined;
 
     recordPayment({
       snsDomain: cfg.snsDomain,
@@ -91,22 +91,22 @@ export function x402Required(cfg: MiddlewareConfig, verifyFn: VerifyFn = verifyP
       parentJobId,
       resource: cfg.resourcePath,
       headers: {
-        'x-aragorn-payment-signature': signature,
-        'x-aragorn-ephemeral-key': proof.umbraEphemeralKey,
-        'x-aragorn-max-depth': String(depth),
-        'x-aragorn-budget-remaining': req.header('X-Aragorn-Budget-Remaining') ?? '',
-        'x-aragorn-request-id': requestId ?? '',
-        'x-aragorn-job-id': jobId ?? '',
-        'x-aragorn-parent-job-id': parentJobId ?? '',
-        'x-aragorn-session': sessionId ?? '',
-        'x-aragorn-network': networkHint,
+        'x-aldor-payment-signature': signature,
+        'x-aldor-ephemeral-key': proof.umbraEphemeralKey,
+        'x-aldor-max-depth': String(depth),
+        'x-aldor-budget-remaining': req.header('X-Aldor-Budget-Remaining') ?? '',
+        'x-aldor-request-id': requestId ?? '',
+        'x-aldor-job-id': jobId ?? '',
+        'x-aldor-parent-job-id': parentJobId ?? '',
+        'x-aldor-session': sessionId ?? '',
+        'x-aldor-network': networkHint,
       },
     });
 
-    (req as any).aragorn = {
+    (req as any).aldor = {
       paymentProof: proof,
       depth,
-      budgetRemaining: req.header('X-Aragorn-Budget-Remaining') ?? null,
+      budgetRemaining: req.header('X-Aldor-Budget-Remaining') ?? null,
       sessionId,
       requestId,
       jobId,

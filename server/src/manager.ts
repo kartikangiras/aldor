@@ -483,8 +483,8 @@ export async function runOrchestrator(
     connection: new Connection(netConfig.solanaRpcUrl, 'confirmed'),
     keypairSecretKey: payerSecret,
     registryProgramId:
-      serverConfig.aragornProgramId && serverConfig.aragornProgramId !== '11111111111111111111111111111111'
-        ? new PublicKey(serverConfig.aragornProgramId)
+      serverConfig.aldorProgramId && serverConfig.aldorProgramId !== '11111111111111111111111111111111'
+        ? new PublicKey(serverConfig.aldorProgramId)
         : undefined,
   });
 
@@ -656,16 +656,16 @@ export async function runOrchestrator(
     let response;
     try {
       const headers: Record<string, string> = {
-        'X-Aragorn-Max-Depth': String(depth),
-        'X-Aragorn-Budget-Remaining': String(Math.max(budget - spentSol, 0)),
-        'X-Aragorn-Request-Id': requestId,
-        'X-Aragorn-Job-Id': taskJobId,
-        'X-Aragorn-Parent-Job-Id': runJobId,
-        'X-Aragorn-Session': context.sessionId ?? '',
+        'X-Aldor-Max-Depth': String(depth),
+        'X-Aldor-Budget-Remaining': String(Math.max(budget - spentSol, 0)),
+        'X-Aldor-Request-Id': requestId,
+        'X-Aldor-Job-Id': taskJobId,
+        'X-Aldor-Parent-Job-Id': runJobId,
+        'X-Aldor-Session': context.sessionId ?? '',
       };
       if (paymentSignature) {
-        headers['X-Aragorn-Payment-Signature'] = paymentSignature;
-        headers['X-Aragorn-Payer'] = payerPublicKey;
+        headers['X-Aldor-Payment-Signature'] = paymentSignature;
+        headers['X-Aldor-Payer'] = payerPublicKey;
       }
       console.log(`[Manager] Calling ${agent.path} for ${agent.name} with payment sig: ${paymentSignature?.slice(0, 16) ?? 'none'}`);
       response = await paid.post(`${serverConfig.serverBaseUrl}${agent.path}`, task.payload, { headers });
@@ -719,7 +719,7 @@ export async function runOrchestrator(
     });
 
     const txSig =
-      (response.config.headers as any)?.['X-Aragorn-Payment-Signature'] ??
+      (response.config.headers as any)?.['X-Aldor-Payment-Signature'] ??
       paymentSignature ??
       null;
     emit(emitter, {

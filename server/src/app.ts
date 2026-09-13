@@ -71,10 +71,10 @@ export function createApp() {
 
     const missingEnv: string[] = [];
     if (!process.env.SOLANA_RPC_URL) missingEnv.push('SOLANA_RPC_URL');
-    if (serverConfig.paymentMode === 'server' && !process.env.ARAGORN_PAYER_SECRET_KEY) {
-      missingEnv.push('ARAGORN_PAYER_SECRET_KEY');
+    if (serverConfig.paymentMode === 'server' && !process.env.ALDOR_PAYER_SECRET_KEY) {
+      missingEnv.push('ALDOR_PAYER_SECRET_KEY');
     }
-    if (!process.env.ARAGORN_PROGRAM_ID) missingEnv.push('ARAGORN_PROGRAM_ID');
+    if (!process.env.ALDOR_PROGRAM_ID) missingEnv.push('ALDOR_PROGRAM_ID');
     if (!process.env.COVALENT_API_KEY) missingEnv.push('COVALENT_API_KEY');
     if (!process.env.DODO_API_KEY) missingEnv.push('DODO_API_KEY');
 
@@ -91,8 +91,8 @@ export function createApp() {
         missingEnv,
       },
       recommendations: [
-        'Set ARAGORN_AGENT_WALLET_MAP with all agent snsDomain -> wallet address entries.',
-        'Use ARAGORN_PAYMENT_MODE=wallet for frontend wallet-signed payments.',
+        'Set ALDOR_AGENT_WALLET_MAP with all agent snsDomain -> wallet address entries.',
+        'Use ALDOR_PAYMENT_MODE=wallet for frontend wallet-signed payments.',
         'Set DODO_API_KEY and COVALENT_API_KEY for full sidetrack integrations.',
       ],
     });
@@ -197,7 +197,7 @@ export function createApp() {
   app.get('/api/analytics/recent-transactions', asyncHandler(async (req, res) => {
     const netConfig = networkFromRequest(req);
     const walletMap = (() => {
-      const raw = process.env.ARAGORN_AGENT_WALLET_MAP;
+      const raw = process.env.ALDOR_AGENT_WALLET_MAP;
       if (!raw) return {} as Record<string, string>;
       try {
         return JSON.parse(raw) as Record<string, string>;
@@ -357,16 +357,16 @@ export function createApp() {
 
   app.post('/api/agent/query', asyncHandler(async (req, res) => {
     const query = String(req.body?.query ?? '');
-    const sessionId = String(req.body?.session ?? req.query.session ?? req.header('X-Aragorn-Session') ?? 'default');
+    const sessionId = String(req.body?.session ?? req.query.session ?? req.header('X-Aldor-Session') ?? 'default');
     const emitter = getSessionEmitter(sessionId);
-    const depth = Number(req.header('X-Aragorn-Max-Depth') ?? 0);
+    const depth = Number(req.header('X-Aldor-Max-Depth') ?? 0);
     if (depth > 3) {
       res.status(400).json({ error: 'MAX_DEPTH_EXCEEDED' });
       return;
     }
 
-    const budget = Number(req.body?.budget ?? req.header('X-Aragorn-Budget-Remaining') ?? 0.01);
-    const requestId = req.header('X-Aragorn-Request-Id') ?? randomUUID();
+    const budget = Number(req.body?.budget ?? req.header('X-Aldor-Budget-Remaining') ?? 0.01);
+    const requestId = req.header('X-Aldor-Request-Id') ?? randomUUID();
     const netConfig = networkFromRequest(req);
     const result = await runOrchestrator(query, emitter, budget, depth, { sessionId, requestId }, netConfig.solanaCluster);
     res.json({ result, requestId });

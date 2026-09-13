@@ -25,7 +25,7 @@ export interface PaymentProof {
   recipient: string;
 }
 
-export interface AragornRequestConfig extends AxiosRequestConfig {
+export interface AldorRequestConfig extends AxiosRequestConfig {
   paymentProofHeader?: string;
 }
 

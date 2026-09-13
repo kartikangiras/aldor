@@ -31,17 +31,17 @@
   }
 
   html {
-    @apply bg-[#0D0D0D] text-aragorn-text antialiased;
+    @apply bg-[#0D0D0D] text-aldor-text antialiased;
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-[#0D0D0D] text-aragorn-text font-sans text-sm;
+    @apply bg-[#0D0D0D] text-aldor-text font-sans text-sm;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   ::selection {
-    @apply bg-aragorn-emerald/20 text-aragorn-emerald;
+    @apply bg-aldor-emerald/20 text-aldor-emerald;
   }
 
   ::-webkit-scrollbar {
@@ -108,28 +108,28 @@
   }
 
   .text-gradient-emerald {
-    @apply bg-gradient-to-r from-aragorn-emerald to-aragorn-cyan bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-aldor-emerald to-aldor-cyan bg-clip-text text-transparent;
   }
   .text-gradient-purple {
-    @apply bg-gradient-to-r from-aragorn-purple to-aragorn-purple-bright bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-aldor-purple to-aldor-purple-bright bg-clip-text text-transparent;
   }
 
   .status-dot {
     @apply w-1.5 h-1.5 rounded-full;
   }
   .status-dot-active {
-    @apply bg-aragorn-emerald shadow-[0_0_6px_rgba(129,140,248,0.8)];
+    @apply bg-aldor-emerald shadow-[0_0_6px_rgba(129,140,248,0.8)];
     animation: statusPulse 2s ease-in-out infinite;
   }
   .status-dot-idle {
-    @apply bg-aragorn-amber;
+    @apply bg-aldor-amber;
   }
   .status-dot-error {
-    @apply bg-aragorn-rose;
+    @apply bg-aldor-rose;
   }
 
   .terminal {
-    @apply bg-aragorn-black border border-aragorn-border font-mono text-xs;
+    @apply bg-aldor-black border border-aldor-border font-mono text-xs;
   }
 
   .animated-border {

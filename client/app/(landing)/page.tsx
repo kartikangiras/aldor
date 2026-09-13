@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useWallet } from '@solana/wallet-adapter-react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import AragornLogo from '@/components/AragornLogo';
+import AldorLogo from '@/components/AldorLogo';
 import ClientOnly from '@/components/ClientOnly';
 
 const WalletMultiButton = dynamic(
@@ -59,7 +59,7 @@ function WalletConnectButton() {
   const { publicKey, connected } = useWallet();
   if (connected && publicKey) {
     return (
-      <Button asChild size="sm" className="gap-2 bg-aragorn-emerald hover:bg-aragorn-emerald-dim text-white border-0 rounded-full px-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.3)]">
+      <Button asChild size="sm" className="gap-2 bg-aldor-emerald hover:bg-aldor-emerald-dim text-white border-0 rounded-full px-5 transition-all duration-300 hover:shadow-[0_0_20px_rgba(129,140,248,0.3)]">
         <Link href="/home">
           <Wallet size={14} /> Launch Dashboard
         </Link>
@@ -79,8 +79,8 @@ export default function LandingPage() {
       {/* ─── NAV ─────────────────────────────────── */}
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-6 px-5 py-2.5 rounded-full" style={{ background: 'rgba(13,13,13,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', minWidth: 340, maxWidth: 680 }}>
         <Link href="/" className="flex items-center gap-2">
-          <AragornLogo size={28} />
-          <span className="font-bold text-sm tracking-tight">Aragorn</span>
+          <AldorLogo size={28} />
+          <span className="font-bold text-sm tracking-tight">Aldor</span>
         </Link>
         <div className="hidden sm:flex items-center gap-5 text-xs text-white/40">
           <Link href="/docs" className="hover:text-white/80 transition-colors">Docs</Link>
@@ -157,7 +157,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="max-w-6xl mx-auto relative">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-16">
-            <p className="text-xs uppercase tracking-[0.2em] text-aragorn-emerald mb-4 font-medium">Core Infrastructure</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-aldor-emerald mb-4 font-medium">Core Infrastructure</p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white/90">Built to handle complexity</h2>
             <p className="text-white/30 max-w-xl mx-auto font-light">A complete stack for autonomous agent economies — from local embeddings to on-chain settlement.</p>
           </motion.div>
@@ -187,7 +187,7 @@ export default function LandingPage() {
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, rgba(129,140,248,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(167,139,250,0.03) 0%, transparent 60%)' }} />
         <div className="max-w-6xl mx-auto relative">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-16">
-            <p className="text-xs uppercase tracking-[0.2em] text-aragorn-emerald mb-4 font-medium">Why Aragorn</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-aldor-emerald mb-4 font-medium">Why Aldor</p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white/90">Built for the community</h2>
             <p className="text-white/30 max-w-xl mx-auto font-light">No subscriptions. No platform fees. No surveillance. Just autonomous agents working for you on Solana.</p>
           </motion.div>
@@ -231,7 +231,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-28 px-6" style={{ background: 'rgba(255,255,255,0.01)' }}>
         <div className="max-w-5xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-16">
-            <p className="text-xs uppercase tracking-[0.2em] text-aragorn-purple mb-4 font-medium">Getting Started</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-aldor-purple mb-4 font-medium">Getting Started</p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white/90">How It Works</h2>
             <p className="text-white/30">Three steps to autonomous economic execution.</p>
           </motion.div>
@@ -253,17 +253,17 @@ export default function LandingPage() {
       <section className="py-24 px-6" style={{ background: 'rgba(255,255,255,0.01)' }}>
         <div className="max-w-3xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-12">
-            <p className="text-xs uppercase tracking-[0.2em] text-aragorn-cyan mb-4 font-medium">Live Preview</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-aldor-cyan mb-4 font-medium">Live Preview</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white/90">See agents in action</h2>
           </motion.div>
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={1}>
             <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)' }}>
               {/* Chat Header */}
               <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-aragorn-emerald to-aragorn-cyan flex items-center justify-center text-white text-xs font-bold">A</div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-aldor-emerald to-aldor-cyan flex items-center justify-center text-white text-xs font-bold">A</div>
                 <div>
-                  <p className="text-sm font-medium text-white/90">Aragorn Agent</p>
-                  <p className="text-[10px] text-white/30 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-aragorn-emerald" /> Online</p>
+                  <p className="text-sm font-medium text-white/90">Aldor Agent</p>
+                  <p className="text-[10px] text-white/30 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-aldor-emerald" /> Online</p>
                 </div>
               </div>
 
@@ -278,16 +278,16 @@ export default function LandingPage() {
 
                 {/* Agent thinking */}
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aragorn-purple to-aragorn-cyan flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">A</div>
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aldor-purple to-aldor-cyan flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">A</div>
                   <div className="space-y-2">
-                    <div className="text-xs text-white/40">Hiring <span className="text-aragorn-purple font-medium">DeFiAnalyst</span> and <span className="text-aragorn-purple font-medium">YieldOptimizer</span>...</div>
-                    <div className="text-xs text-white/40">x402 payment: <span className="text-aragorn-cyan font-medium">0.002 SOL</span> per agent · Umbra stealth active</div>
+                    <div className="text-xs text-white/40">Hiring <span className="text-aldor-purple font-medium">DeFiAnalyst</span> and <span className="text-aldor-purple font-medium">YieldOptimizer</span>...</div>
+                    <div className="text-xs text-white/40">x402 payment: <span className="text-aldor-cyan font-medium">0.002 SOL</span> per agent · Umbra stealth active</div>
                   </div>
                 </div>
 
                 {/* Agent response */}
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aragorn-purple to-aragorn-cyan flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">A</div>
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aldor-purple to-aldor-cyan flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">A</div>
                   <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.85)' }}>
                     Analysis complete. Top strategy: Marinade Finance mSOL staking at 7.2% APY with auto-compounding via Tulip Protocol.
                     <div className="mt-2 pt-2 text-[10px] text-white/25" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -301,7 +301,7 @@ export default function LandingPage() {
               <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex items-center gap-3 rounded-full px-4 py-2.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <input type="text" readOnly placeholder="Type a message..." className="flex-1 bg-transparent text-sm text-white/50 outline-none placeholder:text-white/20" />
-                  <div className="w-7 h-7 rounded-full bg-aragorn-emerald/20 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-aldor-emerald/20 flex items-center justify-center">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                   </div>
                 </div>
@@ -341,8 +341,8 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-10">
             <div>
               <Link href="/" className="flex items-center gap-2 mb-3">
-                <AragornLogo size={24} />
-                <span className="font-bold text-sm">Aragorn</span>
+                <AldorLogo size={24} />
+                <span className="font-bold text-sm">Aldor</span>
               </Link>
               <p className="text-xs text-white/20 leading-relaxed">Autonomous AI economic infrastructure built on Solana.</p>
             </div>
@@ -372,7 +372,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-6 text-center text-[11px] text-white/15" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-            &copy; 2026 Aragorn Network. All rights reserved. Built on Solana.
+            &copy; 2026 Aldor Network. All rights reserved. Built on Solana.
           </div>
         </div>
       </footer>

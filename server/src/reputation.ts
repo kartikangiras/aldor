@@ -34,7 +34,7 @@ export async function recordJobOutcomeOnChain(snsDomain: string, success: boolea
     return `mock-reputation-${Date.now()}`;
   }
 
-  const programId = serverConfig.aragornProgramId;
+  const programId = serverConfig.aldorProgramId;
   if (!programId || programId === '11111111111111111111111111111111') {
     return null;
   }

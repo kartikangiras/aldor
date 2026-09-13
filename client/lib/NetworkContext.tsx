@@ -24,7 +24,7 @@ const NetworkContext = createContext<NetworkContextValue>({
   rpcUrl: 'https://api.devnet.solana.com',
 });
 
-const STORAGE_KEY = 'aragorn_network';
+const STORAGE_KEY = 'aldor_network';
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
   const [network, setNetworkState] = useState<SolanaNetwork>('devnet');

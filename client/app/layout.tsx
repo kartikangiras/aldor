@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: 'Aragorn',
+  title: 'Aldor',
   description: 'Sovereign agent orchestration with x402 payments,Privacy integrated, and Solana-native execution.',
   icons: { icon: '/logo.png' },
 };
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning className="min-h-screen bg-aragorn-void">
+      <body suppressHydrationWarning className="min-h-screen bg-aldor-void">
         <NetworkProvider>
           <WalletContextProvider>{children}</WalletContextProvider>
         </NetworkProvider>

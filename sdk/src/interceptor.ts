@@ -1,5 +1,5 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios';
-import type { AragornAxiosRequestConfig, InterceptorOptions, X402Accept, X402Challenge } from './types.js';
+import type { AldorAxiosRequestConfig, InterceptorOptions, X402Accept, X402Challenge } from './types.js';
 
 function decodeChallenge(data: unknown): X402Challenge {
   if (!data || typeof data !== 'object') {
@@ -14,11 +14,11 @@ export function createPaidAxios(options: InterceptorOptions): AxiosInstance {
   instance.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
     // Only set defaults if not already provided by the caller
-    if (!config.headers['X-Aragorn-Max-Depth']) {
-      config.headers['X-Aragorn-Max-Depth'] = String(options.budget.maxDepth);
+    if (!config.headers['X-Aldor-Max-Depth']) {
+      config.headers['X-Aldor-Max-Depth'] = String(options.budget.maxDepth);
     }
-    if (!config.headers['X-Aragorn-Budget-Remaining']) {
-      config.headers['X-Aragorn-Budget-Remaining'] = options.budget.budgetRemaining;
+    if (!config.headers['X-Aldor-Budget-Remaining']) {
+      config.headers['X-Aldor-Budget-Remaining'] = options.budget.budgetRemaining;
     }
     return config;
   });
@@ -30,8 +30,8 @@ export function createPaidAxios(options: InterceptorOptions): AxiosInstance {
         throw error;
       }
 
-      const original = error.config as AragornAxiosRequestConfig;
-      if (original._aragornRetried) {
+      const original = error.config as AldorAxiosRequestConfig;
+      if (original._aldorRetried) {
         throw error;
       }
 
@@ -54,11 +54,11 @@ export function createPaidAxios(options: InterceptorOptions): AxiosInstance {
       }
 
       const proof = await options.signChallenge(accept);
-      original._aragornRetried = true;
+      original._aldorRetried = true;
       original.headers = original.headers ?? {};
       original.headers['X-Payment'] = Buffer.from(JSON.stringify(proof)).toString('base64');
-      original.headers['X-Aragorn-Payment-Signature'] = proof.signature;
-      original.headers['X-Aragorn-Ephemeral-Key'] = proof.ephemeralKey ?? 'mock-ephemeral-key';
+      original.headers['X-Aldor-Payment-Signature'] = proof.signature;
+      original.headers['X-Aldor-Ephemeral-Key'] = proof.ephemeralKey ?? 'mock-ephemeral-key';
       original.headers['X-Payment-Signature'] = proof.signature;
 
       return instance.request(original);

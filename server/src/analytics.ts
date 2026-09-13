@@ -35,7 +35,7 @@ function getConnection(): Connection {
 export async function fetchPaymentActivity(): Promise<PaymentActivity> {
   const connection = getConnection();
   const walletMap = (() => {
-    const raw = process.env.ARAGORN_AGENT_WALLET_MAP;
+    const raw = process.env.ALDOR_AGENT_WALLET_MAP;
     if (!raw) return {} as Record<string, string>;
     try {
       return JSON.parse(raw) as Record<string, string>;

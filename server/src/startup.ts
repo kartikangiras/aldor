@@ -9,10 +9,10 @@ export function assertStartupConfig(env: NodeJS.ProcessEnv = process.env): void 
   if (!env.SOLANA_RPC_URL) issues.push('Missing SOLANA_RPC_URL');
 
   if (serverConfig.paymentMode === 'server') {
-    if (!env.ARAGORN_PAYER_SECRET_KEY) {
+    if (!env.ALDOR_PAYER_SECRET_KEY) {
       issues.push(
-        'Missing ARAGORN_PAYER_SECRET_KEY for server payment mode. ' +
-        'Either set ARAGORN_PAYMENT_MODE=wallet or provide a payer secret key.'
+        'Missing ALDOR_PAYER_SECRET_KEY for server payment mode. ' +
+        'Either set ALDOR_PAYMENT_MODE=wallet or provide a payer secret key.'
       );
     }
   }
@@ -21,7 +21,7 @@ export function assertStartupConfig(env: NodeJS.ProcessEnv = process.env): void 
     const walletMap = getAgentWalletMap(env);
     if (Object.keys(walletMap).length === 0) {
       issues.push(
-        'Missing ARAGORN_AGENT_WALLET_MAP entries for wallet payment mode. ' +
+        'Missing ALDOR_AGENT_WALLET_MAP entries for wallet payment mode. ' +
         'If your .env file is not being loaded, run with: node --env-file=server/.env dist/server/src/main.js'
       );
     }
@@ -48,7 +48,7 @@ export function assertStartupConfig(env: NodeJS.ProcessEnv = process.env): void 
     if (missingUmbra.length > 0) {
       console.warn(
         `[Startup] Umbra is enabled but secrets are missing for ${missingUmbra.length} agent(s). ` +
-        `Set ARAGORN_UMBRA_SECRET_MAP or individual ARAGORN_UMBRA_SECRET_* env vars. ` +
+        `Set ALDOR_UMBRA_SECRET_MAP or individual ALDOR_UMBRA_SECRET_* env vars. ` +
         `Missing: ${missingUmbra.join(', ')}`
       );
     }

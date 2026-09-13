@@ -4,9 +4,9 @@ const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 function getNetworkHeader(): Record<string, string> {
   if (typeof window === 'undefined') return {};
-  const network = localStorage.getItem('aragorn_network');
+  const network = localStorage.getItem('aldor_network');
   if (network === 'mainnet' || network === 'devnet') {
-    return { 'X-Aragorn-Network': network };
+    return { 'X-Aldor-Network': network };
   }
   return {};
 }
@@ -163,7 +163,7 @@ export async function offRampEarnings(agentAddress: string, amountStablecoin: nu
 export function createEventSource(sessionId: string): EventSource {
   const url = new URL(`${API_BASE}/api/agent/events`, typeof window !== 'undefined' ? window.location.href : undefined);
   url.searchParams.set('session', sessionId);
-  const network = typeof window !== 'undefined' ? localStorage.getItem('aragorn_network') : null;
+  const network = typeof window !== 'undefined' ? localStorage.getItem('aldor_network') : null;
   if (network === 'mainnet' || network === 'devnet') {
     url.searchParams.set('network', network);
   }

@@ -53,8 +53,8 @@ export interface InterceptorOptions {
   budget: BudgetPolicy;
 }
 
-export interface AragornAxiosRequestConfig extends AxiosRequestConfig {
-  _aragornRetried?: boolean;
+export interface AldorAxiosRequestConfig extends AxiosRequestConfig {
+  _aldorRetried?: boolean;
 }
 
 export interface PaidResponse<T = unknown> extends AxiosResponse<T> {

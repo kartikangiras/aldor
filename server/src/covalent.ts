@@ -123,7 +123,7 @@ export async function enrichAgentsWithBalances(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<Array<Record<string, unknown>>> {
   const walletMap = (() => {
-    const raw = env.ARAGORN_AGENT_WALLET_MAP;
+    const raw = env.ALDOR_AGENT_WALLET_MAP;
     if (!raw) return {} as Record<string, string>;
     try {
       return JSON.parse(raw) as Record<string, string>;

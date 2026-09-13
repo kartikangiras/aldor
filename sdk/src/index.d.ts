@@ -5,7 +5,7 @@ export { resolveAgent, resolveRecipientStealthKey } from './sns.js';
 export { executeUmbraTransfer, verifyUmbraTransfer } from './umbra.js';
 export { fetchAgentRegistry, fetchAgentRegistryByDomain, getStealthKeyForDomain } from './registry.js';
 export type {
-  AragornAxiosRequestConfig,
+  AldorAxiosRequestConfig,
   AssetKind,
   BudgetPolicy,
   InterceptorOptions,

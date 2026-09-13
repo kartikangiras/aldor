@@ -81,18 +81,18 @@ export default function TracePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Execution Trace</h1>
-        <p className="text-sm text-aragorn-text-secondary">Agent execution observability</p>
+        <p className="text-sm text-aldor-text-secondary">Agent execution observability</p>
       </div>
 
       {/* Connection controls */}
-      <Card className="border-aragorn-border bg-aragorn-graphite/60">
+      <Card className="border-aldor-border bg-aldor-graphite/60">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
             <Input
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value)}
               placeholder="Enter session ID..."
-              className="max-w-sm bg-aragorn-surface border-aragorn-border"
+              className="max-w-sm bg-aldor-surface border-aldor-border"
               disabled={isConnected}
             />
             <Button
@@ -114,7 +114,7 @@ export default function TracePage() {
             </Button>
             {isConnected && (
               <Badge variant="default" className="gap-1.5 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-aragorn-emerald" />
+                <span className="w-1.5 h-1.5 rounded-full bg-aldor-emerald" />
                 Live
               </Badge>
             )}
@@ -124,9 +124,9 @@ export default function TracePage() {
 
       {/* Session IDs */}
       {sessionIds.length > 0 && (
-        <Card className="border-aragorn-border bg-aragorn-graphite/60">
+        <Card className="border-aldor-border bg-aldor-graphite/60">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-aragorn-text-muted uppercase tracking-wider">
+            <CardTitle className="text-xs font-semibold text-aldor-text-muted uppercase tracking-wider">
               Active Sessions
             </CardTitle>
           </CardHeader>
@@ -136,7 +136,7 @@ export default function TracePage() {
                 <Badge
                   key={sid}
                   variant="outline"
-                  className="font-mono text-[10px] text-aragorn-emerald border-aragorn-emerald/30"
+                  className="font-mono text-[10px] text-aldor-emerald border-aldor-emerald/30"
                 >
                   {sid}
                 </Badge>
@@ -147,13 +147,13 @@ export default function TracePage() {
       )}
 
       {/* Timeline */}
-      <Card className="border-aragorn-border bg-aragorn-graphite/60">
+      <Card className="border-aldor-border bg-aldor-graphite/60">
         <CardHeader>
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-aragorn-emerald" />
+            <Activity size={16} className="text-aldor-emerald" />
             Execution Timeline
             {steps.length > 0 && (
-              <span className="text-xs text-aragorn-text-muted font-normal ml-auto">
+              <span className="text-xs text-aldor-text-muted font-normal ml-auto">
                 {steps.length} events
               </span>
             )}
@@ -161,13 +161,13 @@ export default function TracePage() {
         </CardHeader>
         <CardContent>
           {steps.length === 0 && !isConnected && (
-            <div className="text-center py-12 text-aragorn-text-muted text-sm">
+            <div className="text-center py-12 text-aldor-text-muted text-sm">
               Enter a session ID and click Connect to start monitoring execution.
             </div>
           )}
 
           {steps.length === 0 && isConnected && (
-            <div className="flex items-center justify-center py-12 text-aragorn-text-muted text-sm">
+            <div className="flex items-center justify-center py-12 text-aldor-text-muted text-sm">
               <Loader2 size={16} className="animate-spin mr-2" />
               Waiting for events...
             </div>
@@ -183,46 +183,46 @@ export default function TracePage() {
                     <div
                       className={`w-2 h-2 rounded-full ${
                         status === 'success'
-                          ? 'bg-aragorn-emerald'
+                          ? 'bg-aldor-emerald'
                           : status === 'error'
-                          ? 'bg-aragorn-rose'
-                          : 'bg-aragorn-amber'
+                          ? 'bg-aldor-rose'
+                          : 'bg-aldor-amber'
                       }`}
                     />
-                    {i < steps.length - 1 && <div className="w-px h-full bg-aragorn-border mt-1" />}
+                    {i < steps.length - 1 && <div className="w-px h-full bg-aldor-border mt-1" />}
                   </div>
                   <div className="flex-1 pb-4">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className="text-xs font-mono">
                         {trace.type}
                       </Badge>
-                      <span className="text-xs text-aragorn-text-muted font-mono">{time}</span>
-                      <span className="text-xs text-aragorn-text-muted">depth {trace.depth}</span>
+                      <span className="text-xs text-aldor-text-muted font-mono">{time}</span>
+                      <span className="text-xs text-aldor-text-muted">depth {trace.depth}</span>
                       {status === 'success' ? (
-                        <CheckCircle2 size={12} className="text-aragorn-emerald" />
+                        <CheckCircle2 size={12} className="text-aldor-emerald" />
                       ) : status === 'error' ? (
-                        <XCircle size={12} className="text-aragorn-rose" />
+                        <XCircle size={12} className="text-aldor-rose" />
                       ) : (
-                        <Clock size={12} className="text-aragorn-amber" />
+                        <Clock size={12} className="text-aldor-amber" />
                       )}
                     </div>
                     {trace.agent && (
-                      <p className="text-xs text-aragorn-purple-bright mb-1">Agent: {trace.agent}</p>
+                      <p className="text-xs text-aldor-purple-bright mb-1">Agent: {trace.agent}</p>
                     )}
                     {trace.domain && (
-                      <p className="text-xs text-aragorn-cyan mb-1">{trace.domain}</p>
+                      <p className="text-xs text-aldor-cyan mb-1">{trace.domain}</p>
                     )}
                     {trace.txSignature && (
                       <a
                         href={`https://explorer.solana.com/tx/${trace.txSignature}?cluster=devnet`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs font-mono text-aragorn-emerald hover:underline block mb-1"
+                        className="text-xs font-mono text-aldor-emerald hover:underline block mb-1"
                       >
                         {trace.txSignature.slice(0, 20)}...
                       </a>
                     )}
-                    <p className="text-sm text-aragorn-text-secondary">{trace.message}</p>
+                    <p className="text-sm text-aldor-text-secondary">{trace.message}</p>
                   </div>
                 </div>
               );

@@ -35,7 +35,7 @@ export class PaymentSigner {
         catch (resolveError) {
             console.error('[PaymentSigner] Failed to resolve SOL recipient', { domain: challenge.payTo, error: resolveError?.message });
             throw new Error(`Cannot resolve SOL recipient '${challenge.payTo}'. ` +
-                `Ensure ARAGORN_AGENT_WALLET_MAP or ARAGORN_SNS_FALLBACK_MAP contains this domain. ` +
+                `Ensure ALDOR_AGENT_WALLET_MAP or ALDOR_SNS_FALLBACK_MAP contains this domain. ` +
                 `Error: ${resolveError?.message ?? resolveError}`);
         }
         const payTo = new PublicKey(resolvedAddress);

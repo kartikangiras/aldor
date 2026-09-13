@@ -26,10 +26,10 @@ interface CliFlags {
 
 function parseArgs(argv: string[]): CliFlags {
   const flags: CliFlags = {
-    budget: Number(process.env.ARAGORN_CLI_BUDGET ?? 0.01),
-    maxDepth: Number(process.env.ARAGORN_CLI_MAX_DEPTH ?? 3),
+    budget: Number(process.env.ALDOR_CLI_BUDGET ?? 0.01),
+    maxDepth: Number(process.env.ALDOR_CLI_MAX_DEPTH ?? 3),
     mockPayments: (process.env.MOCK_PAYMENTS ?? 'false').toLowerCase() === 'true',
-    baseUrl: process.env.ARAGORN_SERVER_URL ?? 'http://127.0.0.1:3000',
+    baseUrl: process.env.ALDOR_SERVER_URL ?? 'http://127.0.0.1:3000',
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -113,7 +113,7 @@ async function main() {
   const signatures = new Set<string>();
   let hireCount = 0;
 
-  const secret = parseSecret(process.env.ARAGORN_PAYER_SECRET_KEY ?? '');
+  const secret = parseSecret(process.env.ALDOR_PAYER_SECRET_KEY ?? '');
   const signer = new PaymentSigner({
     connection: new Connection(process.env.SOLANA_RPC_URL ?? 'https://api.devnet.solana.com', 'confirmed'),
     keypairSecretKey: secret,
@@ -146,10 +146,10 @@ async function main() {
     }
   });
 
-  console.log('Aragorn CLI ready. Type a query or "exit".');
+  console.log('Aldor CLI ready. Type a query or "exit".');
 
   while (true) {
-    const query = (await rl.question('aragorn> ')).trim();
+    const query = (await rl.question('aldor> ')).trim();
     if (!query) continue;
     if (query.toLowerCase() === 'exit') break;
 
@@ -159,8 +159,8 @@ async function main() {
         budget: flags.budget,
       }, {
         headers: {
-          'X-Aragorn-Max-Depth': String(flags.maxDepth),
-          'X-Aragorn-Budget-Remaining': String(flags.budget),
+          'X-Aldor-Max-Depth': String(flags.maxDepth),
+          'X-Aldor-Budget-Remaining': String(flags.budget),
         },
       });
 

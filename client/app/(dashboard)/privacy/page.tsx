@@ -63,58 +63,58 @@ export default function PrivacyPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Privacy Integration</h1>
-        <p className="text-sm text-aragorn-text-secondary">Umbra SDK-powered stealth analytics</p>
+        <p className="text-sm text-aldor-text-secondary">Umbra SDK-powered stealth analytics</p>
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-8 text-aragorn-text-muted">
+        <div className="flex items-center justify-center py-8 text-aldor-text-muted">
           <Loader2 size={24} className="animate-spin mr-2" />
           Loading Umbra data...
         </div>
       )}
 
       {error && !loading && (
-        <Card className="border-aragorn-rose/30 bg-aragorn-rose/10">
-          <CardContent className="p-4 text-sm text-aragorn-rose">{error}</CardContent>
+        <Card className="border-aldor-rose/30 bg-aldor-rose/10">
+          <CardContent className="p-4 text-sm text-aldor-rose">{error}</CardContent>
         </Card>
       )}
 
       {!loading && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-aragorn-border bg-aragorn-graphite/60">
+            <Card className="border-aldor-border bg-aldor-graphite/60">
               <CardContent className="p-5 text-center">
-                <ShieldCheck size={32} className="mx-auto mb-3 text-aragorn-emerald" />
+                <ShieldCheck size={32} className="mx-auto mb-3 text-aldor-emerald" />
                 <p className="text-3xl font-bold">{txCount}</p>
-                <p className="text-xs text-aragorn-text-muted mt-1">Shielded Transactions</p>
+                <p className="text-xs text-aldor-text-muted mt-1">Shielded Transactions</p>
               </CardContent>
             </Card>
-            <Card className="border-aragorn-border bg-aragorn-graphite/60">
+            <Card className="border-aldor-border bg-aldor-graphite/60">
               <CardContent className="p-5 text-center">
-                <Lock size={32} className="mx-auto mb-3 text-aragorn-purple" />
+                <Lock size={32} className="mx-auto mb-3 text-aldor-purple" />
                 <p className="text-3xl font-bold">{totalVolumeSol.toFixed(4)}</p>
-                <p className="text-xs text-aragorn-text-muted mt-1">SOL Shielded</p>
+                <p className="text-xs text-aldor-text-muted mt-1">SOL Shielded</p>
               </CardContent>
             </Card>
-            <Card className="border-aragorn-border bg-aragorn-graphite/60">
+            <Card className="border-aldor-border bg-aldor-graphite/60">
               <CardContent className="p-5 text-center">
-                <Shield size={32} className="mx-auto mb-3 text-aragorn-cyan" />
+                <Shield size={32} className="mx-auto mb-3 text-aldor-cyan" />
                 <p className="text-3xl font-bold">{stealthCount}</p>
-                <p className="text-xs text-aragorn-text-muted mt-1">Stealth Addresses</p>
+                <p className="text-xs text-aldor-text-muted mt-1">Stealth Addresses</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card className="border-aragorn-border bg-aragorn-graphite/60">
+          <Card className="border-aldor-border bg-aldor-graphite/60">
             <CardHeader>
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Shield size={16} className="text-aragorn-purple" />
+                <Shield size={16} className="text-aldor-purple" />
                 Umbra Shielded Transaction Log
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recentPayments.length === 0 ? (
-                <div className="text-center py-12 text-aragorn-text-muted text-sm">
+                <div className="text-center py-12 text-aldor-text-muted text-sm">
                   <Lock size={24} className="mx-auto mb-3 opacity-30" />
                   <p>No shielded transactions yet.</p>
                   <p className="text-[10px] mt-1">All agent payments are routed through Umbra stealth addresses.</p>
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
                     return (
                       <div
                         key={i}
-                        className="p-3 rounded-lg bg-aragorn-black border border-aragorn-border hover:border-aragorn-purple/30 transition-colors"
+                        className="p-3 rounded-lg bg-aldor-black border border-aldor-border hover:border-aldor-purple/30 transition-colors"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -136,19 +136,19 @@ export default function PrivacyPage() {
                             </Badge>
                             <span className="text-xs font-semibold">{tx.agent}</span>
                           </div>
-                          <span className="text-[10px] text-aragorn-text-muted">{timeAgo(tx.timestamp)}</span>
+                          <span className="text-[10px] text-aldor-text-muted">{timeAgo(tx.timestamp)}</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className="flex items-center gap-1.5">
-                            <Fingerprint size={10} className="text-aragorn-cyan" />
-                            <span className="text-[10px] text-aragorn-text-secondary">FP:</span>
-                            <span className="text-[10px] font-mono text-aragorn-cyan">{fingerprint}</span>
+                            <Fingerprint size={10} className="text-aldor-cyan" />
+                            <span className="text-[10px] text-aldor-text-secondary">FP:</span>
+                            <span className="text-[10px] font-mono text-aldor-cyan">{fingerprint}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <Lock size={10} className="text-aragorn-purple" />
-                            <span className="text-[10px] text-aragorn-text-secondary">Stealth:</span>
-                            <span className="text-[10px] font-mono text-aragorn-purple">{stealthHash}</span>
+                            <Lock size={10} className="text-aldor-purple" />
+                            <span className="text-[10px] text-aldor-text-secondary">Stealth:</span>
+                            <span className="text-[10px] font-mono text-aldor-purple">{stealthHash}</span>
                           </div>
                         </div>
 
@@ -157,12 +157,12 @@ export default function PrivacyPage() {
                             href={`https://explorer.solana.com/tx/${tx.hash}${clusterParam}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[10px] font-mono text-aragorn-emerald hover:underline flex items-center gap-1"
+                            className="text-[10px] font-mono text-aldor-emerald hover:underline flex items-center gap-1"
                           >
                             <ExternalLink size={9} />
                             {tx.hash.slice(0, 16)}...
                           </a>
-                          <div className="flex items-center gap-1 text-[10px] text-aragorn-emerald">
+                          <div className="flex items-center gap-1 text-[10px] text-aldor-emerald">
                             <CheckCircle2 size={10} />
                             Umbra Shielded &amp; Secured
                           </div>
@@ -176,10 +176,10 @@ export default function PrivacyPage() {
           </Card>
 
           {/* Footer */}
-          <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aragorn-text-muted border-t border-aragorn-border">
+          <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aldor-text-muted border-t border-aldor-border">
             <span>Powered by</span>
             <img src="/umbra.png" alt="Umbra" className="w-4 h-4 rounded-sm object-contain" />
-            <span className="text-aragorn-purple font-medium">Umbra Privacy Protocol</span>
+            <span className="text-aldor-purple font-medium">Umbra Privacy Protocol</span>
           </div>
         </>
       )}

@@ -5,9 +5,9 @@ import { getAgentWalletMap, isValidSolanaAddress } from '../src/wallets.js';
 describe('wallet utilities', () => {
   it('parses wallet map json', () => {
     const map = getAgentWalletMap({
-      ARAGORN_AGENT_WALLET_MAP: '{"research.aragorn.sol":"11111111111111111111111111111111"}',
+      ALDOR_AGENT_WALLET_MAP: '{"research.aldor.sol":"11111111111111111111111111111111"}',
     } as NodeJS.ProcessEnv);
-    assert.equal(map['research.aragorn.sol'], '11111111111111111111111111111111');
+    assert.equal(map['research.aldor.sol'], '11111111111111111111111111111111');
   });
 
   it('validates solana addresses', () => {

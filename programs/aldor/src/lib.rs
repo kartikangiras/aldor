@@ -13,7 +13,7 @@ const MAX_CAPABILITIES: usize = 8;
 const MAX_CAPABILITY_LEN: usize = 32;
 
 #[program]
-pub mod aragorn {
+pub mod aldor {
     use super::*;
 
     pub fn register_agent(
@@ -26,13 +26,13 @@ pub mod aragorn {
         is_recursive: bool,
         capabilities: Vec<String>,
     ) -> Result<()> {
-        require!(sns_domain.len() <= MAX_SNS_LEN, AragornError::StringTooLong);
-        require!(name.len() <= MAX_NAME_LEN, AragornError::StringTooLong);
-        require!(category.len() <= MAX_CATEGORY_LEN, AragornError::StringTooLong);
-        require!(price_micro_stablecoin > 0, AragornError::InvalidPrice);
-        require!(capabilities.len() <= MAX_CAPABILITIES, AragornError::TooManyCapabilities);
+        require!(sns_domain.len() <= MAX_SNS_LEN, AldorError::StringTooLong);
+        require!(name.len() <= MAX_NAME_LEN, AldorError::StringTooLong);
+        require!(category.len() <= MAX_CATEGORY_LEN, AldorError::StringTooLong);
+        require!(price_micro_stablecoin > 0, AldorError::InvalidPrice);
+        require!(capabilities.len() <= MAX_CAPABILITIES, AldorError::TooManyCapabilities);
         for cap in capabilities.iter() {
-            require!(cap.len() <= MAX_CAPABILITY_LEN, AragornError::StringTooLong);
+            require!(cap.len() <= MAX_CAPABILITY_LEN, AldorError::StringTooLong);
         }
 
         let agent = &mut ctx.accounts.agent;
@@ -66,14 +66,14 @@ pub mod aragorn {
         new_capabilities: Vec<String>,
         new_price_micro_stablecoin: u64,
     ) -> Result<()> {
-        require!(new_capabilities.len() <= MAX_CAPABILITIES, AragornError::TooManyCapabilities);
+        require!(new_capabilities.len() <= MAX_CAPABILITIES, AldorError::TooManyCapabilities);
         for cap in new_capabilities.iter() {
-            require!(cap.len() <= MAX_CAPABILITY_LEN, AragornError::StringTooLong);
+            require!(cap.len() <= MAX_CAPABILITY_LEN, AldorError::StringTooLong);
         }
 
         let agent = &mut ctx.accounts.agent;
-        require!(agent.owner == ctx.accounts.owner.key(), AragornError::Unauthorized);
-        require!(new_price_micro_stablecoin > 0, AragornError::InvalidPrice);
+        require!(agent.owner == ctx.accounts.owner.key(), AldorError::Unauthorized);
+        require!(new_price_micro_stablecoin > 0, AldorError::InvalidPrice);
 
         agent.capabilities = new_capabilities.clone();
         agent.price_micro_stablecoin = new_price_micro_stablecoin;
@@ -89,7 +89,7 @@ pub mod aragorn {
 
     pub fn record_job_outcome(ctx: Context<RecordJobOutcome>, success: bool) -> Result<()> {
         let agent = &mut ctx.accounts.agent;
-        require!(agent.owner == ctx.accounts.owner.key(), AragornError::Unauthorized);
+        require!(agent.owner == ctx.accounts.owner.key(), AldorError::Unauthorized);
 
         agent.total_jobs = agent.total_jobs.saturating_add(1);
         if success {
@@ -110,7 +110,7 @@ pub mod aragorn {
 
     pub fn deactivate_agent(ctx: Context<DeactivateAgent>) -> Result<()> {
         let agent = &mut ctx.accounts.agent;
-        require!(agent.owner == ctx.accounts.owner.key(), AragornError::Unauthorized);
+        require!(agent.owner == ctx.accounts.owner.key(), AldorError::Unauthorized);
         agent.active = false;
 
         emit!(AgentDeactivated {
@@ -212,7 +212,7 @@ pub struct AgentDeactivated {
 }
 
 #[error_code]
-pub enum AragornError {
+pub enum AldorError {
     #[msg("String too long")]
     StringTooLong,
     #[msg("Unauthorized")]

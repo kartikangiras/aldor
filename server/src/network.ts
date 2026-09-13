@@ -23,7 +23,7 @@ export function resolveNetworkConfig(networkHint?: string): PerRequestNetworkCon
 }
 
 export function networkFromRequest(req: { headers?: { [key: string]: string | string[] | undefined }; query?: { network?: string | string[] } }): PerRequestNetworkConfig {
-  const headerNetwork = req.headers?.['x-aragorn-network'];
+  const headerNetwork = req.headers?.['x-aldor-network'];
   const queryNetwork = req.query?.network;
   const hint = typeof headerNetwork === 'string' ? headerNetwork : typeof queryNetwork === 'string' ? queryNetwork : undefined;
   return resolveNetworkConfig(hint);

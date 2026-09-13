@@ -312,17 +312,17 @@ export default function PlatformFlowDiagram() {
       </svg>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 mt-4 text-[10px] text-aragorn-text-muted">
+      <div className="flex flex-wrap gap-4 mt-4 text-[10px] text-aldor-text-muted">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-px bg-aragorn-emerald" />
+          <div className="w-3 h-px bg-aldor-emerald" />
           <span>x402 Payment</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-px bg-aragorn-purple-bright border-dashed" style={{ borderTop: '1px dashed #9d4edd' }} />
+          <div className="w-3 h-px bg-aldor-purple-bright border-dashed" style={{ borderTop: '1px dashed #9d4edd' }} />
           <span>Optional / Async</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <ArrowRight size={10} className="text-aragorn-text-muted" />
+          <ArrowRight size={10} className="text-aldor-text-muted" />
           <span>Hover nodes to highlight flows</span>
         </div>
       </div>

@@ -10,6 +10,6 @@ const app = createApp();
 const port = Number(process.env.PORT ?? 3002);
 
 app.listen(port, () => {
-  console.log(`Aragorn server listening on ${port} (${serverConfig.serverBaseUrl})`);
+  console.log(`Aldor server listening on ${port} (${serverConfig.serverBaseUrl})`);
   console.log(`Payment mode: ${serverConfig.paymentMode} | Cluster: ${serverConfig.solanaCluster} | Umbra: ${serverConfig.umbraEnabled}`);
 });

@@ -3,13 +3,13 @@ seeds = true
 skip-lint = false
 
 [programs.localnet]
-aragorn = "11111111111111111111111111111111"
+aldor = "11111111111111111111111111111111"
 
 [programs.devnet]
-aragorn = "2km5TwkgiaDWfAyojtntyj5Djuz6ivcBVvWR8SSR4DQj"
+aldor = "2km5TwkgiaDWfAyojtntyj5Djuz6ivcBVvWR8SSR4DQj"
 
 [programs.mainnet]
-aragorn = "11111111111111111111111111111111"
+aldor = "11111111111111111111111111111111"
 
 [registry]
 url = "https://api.apr.dev"

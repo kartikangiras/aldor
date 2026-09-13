@@ -233,8 +233,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
       change: '+live',
       trend: 'up' as const,
       icon: Activity,
-      color: 'text-aragorn-emerald',
-      bg: 'bg-aragorn-emerald/10',
+      color: 'text-aldor-emerald',
+      bg: 'bg-aldor-emerald/10',
       sparkColor: '#818cf8',
     },
     {
@@ -243,8 +243,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
       change: '+live',
       trend: 'up' as const,
       icon: Bot,
-      color: 'text-aragorn-purple-bright',
-      bg: 'bg-aragorn-purple/10',
+      color: 'text-aldor-purple-bright',
+      bg: 'bg-aldor-purple/10',
       sparkColor: '#a78bfa',
     },
     {
@@ -253,8 +253,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
       change: '+live',
       trend: 'up' as const,
       icon: Zap,
-      color: 'text-aragorn-cyan',
-      bg: 'bg-aragorn-cyan/10',
+      color: 'text-aldor-cyan',
+      bg: 'bg-aldor-cyan/10',
       sparkColor: '#67e8f9',
     },
 
@@ -265,8 +265,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
       <div className="space-y-6">
         {/* Dodo Status Banners */}
         {walletFunded && (
-          <Card className="border-aragorn-emerald/20 bg-aragorn-emerald/5">
-            <CardContent className="p-4 flex items-center gap-2 text-sm text-aragorn-emerald">
+          <Card className="border-aldor-emerald/20 bg-aldor-emerald/5">
+            <CardContent className="p-4 flex items-center gap-2 text-sm text-aldor-emerald">
               <CheckCircle2 size={16} />
               <span>Wallet funded successfully! Your balance should update shortly.</span>
             </CardContent>
@@ -274,8 +274,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
         )}
 
         {walletCancelled && (
-          <Card className="border-aragorn-rose/30 bg-aragorn-rose/5">
-            <CardContent className="p-4 flex items-center gap-2 text-sm text-aragorn-rose">
+          <Card className="border-aldor-rose/30 bg-aldor-rose/5">
+            <CardContent className="p-4 flex items-center gap-2 text-sm text-aldor-rose">
               <AlertCircle size={16} />
               <span>Payment was cancelled. No funds were charged.</span>
             </CardContent>
@@ -286,7 +286,7 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Mission Control</h1>
-            <p className="text-sm text-aragorn-text-secondary">Autonomous agent orchestration dashboard</p>
+            <p className="text-sm text-aldor-text-secondary">Autonomous agent orchestration dashboard</p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="default" className="gap-1.5">
@@ -318,15 +318,15 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
                   </div>
                   <span className={cn(
                     'text-xs font-medium flex items-center gap-1',
-                    stat.trend === 'up' ? 'text-aragorn-emerald' : 'text-aragorn-rose'
+                    stat.trend === 'up' ? 'text-aldor-emerald' : 'text-aldor-rose'
                   )}>
                     <ArrowUpRight size={12} />
                     {stat.change}
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-aragorn-text">{stat.value}</p>
+                <p className="text-2xl font-bold text-aldor-text">{stat.value}</p>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-aragorn-text-muted">{stat.label}</p>
+                  <p className="text-xs text-aldor-text-muted">{stat.label}</p>
                   <svg width="64" height="28" viewBox="0 0 64 28" fill="none" className="opacity-60">
                     <path d={sparkPaths[i]} stroke={stat.sparkColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                   </svg>
@@ -343,25 +343,25 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap size={16} className="text-aragorn-emerald" />
+                <Zap size={16} className="text-aldor-emerald" />
                 <div className="flex gap-1 ml-1"><span className="w-2 h-2 rounded-full bg-red-400/70" /><span className="w-2 h-2 rounded-full bg-yellow-400/70" /><span className="w-2 h-2 rounded-full bg-green-400/70" /></div>
                 <CardTitle className="text-sm font-semibold">Agent Terminal</CardTitle>
               </div>
               <Badge variant="outline" className="text-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-aragorn-emerald mr-1.5 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-aldor-emerald mr-1.5 animate-pulse" />
                 Live
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             {/* Chat / Output — refined: only final answer, no markdown */}
-            <div className="bg-aragorn-black rounded-lg border border-aragorn-border p-4 h-80 overflow-y-auto scrollbar-thin mb-4">
+            <div className="bg-aldor-black rounded-lg border border-aldor-border p-4 h-80 overflow-y-auto scrollbar-thin mb-4">
               <div className="space-y-3">
                 {/* User query bubble */}
                 {steps.filter((s) => s.type === 'MANAGER_PLANNING' && s.depth === 0 && s.message).map((step, i) => (
                   <div key={`q-${i}`} className="flex justify-end">
-                    <div className="max-w-[85%] px-3 py-2 rounded-lg text-sm bg-aragorn-purple/10 text-aragorn-text border border-aragorn-purple/30">
-                      <span className="text-xs text-aragorn-purple-bright font-medium block mb-0.5">You</span>
+                    <div className="max-w-[85%] px-3 py-2 rounded-lg text-sm bg-aldor-purple/10 text-aldor-text border border-aldor-purple/30">
+                      <span className="text-xs text-aldor-purple-bright font-medium block mb-0.5">You</span>
                       {step.message}
                     </div>
                   </div>
@@ -382,8 +382,8 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
                     .trim();
                   return (
                     <div key={`res-${i}`} className="flex justify-start">
-                      <div className="max-w-[90%] px-3 py-2 rounded-lg text-sm bg-aragorn-emerald/5 text-aragorn-text border border-aragorn-emerald/20">
-                        <span className="text-xs text-aragorn-emerald font-medium block mb-0.5">Result</span>
+                      <div className="max-w-[90%] px-3 py-2 rounded-lg text-sm bg-aldor-emerald/5 text-aldor-text border border-aldor-emerald/20">
+                        <span className="text-xs text-aldor-emerald font-medium block mb-0.5">Result</span>
                         <span className="whitespace-pre-wrap leading-relaxed">{clean}</span>
                       </div>
                     </div>
@@ -393,7 +393,7 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
                 {/* Errors only */}
                 {steps.filter((s) => ['SPECIALIST_FAILED', 'BUDGET_EXCEEDED', 'MAX_DEPTH_EXCEEDED'].includes(s.type)).map((step, i) => (
                   <div key={`err-${i}`} className="flex justify-start">
-                    <div className="max-w-[90%] px-3 py-2 rounded-lg text-xs bg-aragorn-rose/5 border border-aragorn-rose/20 text-aragorn-rose">
+                    <div className="max-w-[90%] px-3 py-2 rounded-lg text-xs bg-aldor-rose/5 border border-aldor-rose/20 text-aldor-rose">
                       <span className="font-medium">{step.agent ?? 'System'}</span>{' '}
                       {step.message ?? 'An error occurred'}
                     </div>
@@ -402,15 +402,15 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
 
                 {isLoading && steps.filter((s) => s.type === 'RESULT_COMPOSED').length === 0 && (
                   <div className="flex justify-start">
-                    <div className="bg-aragorn-surface border border-aragorn-border px-3 py-2 rounded-lg flex items-center gap-2">
-                      <Loader2 size={14} className="animate-spin text-aragorn-emerald" />
-                      <span className="text-xs text-aragorn-text-muted">Orchestrating agents...</span>
+                    <div className="bg-aldor-surface border border-aldor-border px-3 py-2 rounded-lg flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin text-aldor-emerald" />
+                      <span className="text-xs text-aldor-text-muted">Orchestrating agents...</span>
                     </div>
                   </div>
                 )}
 
                 {steps.length === 0 && !result && !isLoading && (
-                  <div className="text-center text-aragorn-text-muted text-xs py-8">
+                  <div className="text-center text-aldor-text-muted text-xs py-8">
                     Type a query to delegate to autonomous agents.
                   </div>
                 )}
@@ -424,7 +424,7 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Enter query or command..."
-                className="flex-1 bg-aragorn-surface border border-aragorn-border rounded-md px-4 py-2.5 text-sm text-aragorn-text placeholder:text-aragorn-text-muted focus:outline-none focus:border-aragorn-emerald/50"
+                className="flex-1 bg-aldor-surface border border-aldor-border rounded-md px-4 py-2.5 text-sm text-aldor-text placeholder:text-aldor-text-muted focus:outline-none focus:border-aldor-emerald/50"
               />
               <Button type="submit" disabled={isLoading} size="sm" className="gap-2">
                 {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
@@ -444,7 +444,7 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
             <CardContent className="space-y-4">
               {/* Suggested Queries */}
               <div className="space-y-2">
-                <p className="text-xs text-aragorn-text-muted uppercase tracking-wider font-medium">Popular Tasks</p>
+                <p className="text-xs text-aldor-text-muted uppercase tracking-wider font-medium">Popular Tasks</p>
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTED_QUERIES.map((sq) => (
                     <button
@@ -454,7 +454,7 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
                         executeQuery(sq.query);
                       }}
                       disabled={isLoading}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-aragorn-surface/50 border border-aragorn-border hover:border-aragorn-emerald/40 hover:text-aragorn-text transition-colors text-xs text-aragorn-text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-aldor-surface/50 border border-aldor-border hover:border-aldor-emerald/40 hover:text-aldor-text transition-colors text-xs text-aldor-text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <sq.icon size={12} />
                       {sq.label}
@@ -490,14 +490,14 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-aragorn-text-secondary">SOL Balance</span>
+                    <span className="text-sm text-aldor-text-secondary">SOL Balance</span>
                     <span className="text-sm font-mono font-semibold">
                       {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : '—'}
                     </span>
                   </div>
 
                   {publicKey && (
-                    <p className="text-xs text-aragorn-text-muted font-mono truncate">
+                    <p className="text-xs text-aldor-text-muted font-mono truncate">
                       {truncate(publicKey.toBase58(), 6)}
                     </p>
                   )}
@@ -525,42 +525,42 @@ function DashboardPageInner({ initialPrefill }: { initialPrefill?: string }) {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-aragorn-border">
-                  <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Agent</th>
-                  <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Tx Hash</th>
-                  <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Amount</th>
-                  <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3 pr-4">Token</th>
-                  <th className="text-left text-xs font-medium text-aragorn-text-muted pb-3">Time</th>
+                <tr className="border-b border-aldor-border">
+                  <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Agent</th>
+                  <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Tx Hash</th>
+                  <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Amount</th>
+                  <th className="text-left text-xs font-medium text-aldor-text-muted pb-3 pr-4">Token</th>
+                  <th className="text-left text-xs font-medium text-aldor-text-muted pb-3">Time</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingData ? (
-                  <tr><td colSpan={5} className="py-4 text-xs text-aragorn-text-muted text-center">Loading...</td></tr>
+                  <tr><td colSpan={5} className="py-4 text-xs text-aldor-text-muted text-center">Loading...</td></tr>
                 ) : activity?.recentPayments?.length ? (
                   activity.recentPayments.slice(0, 10).map((item, i) => (
                     <tr key={i} className="activity-row cursor-default">
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aragorn-purple to-aragorn-cyan flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aldor-purple to-aldor-cyan flex items-center justify-center">
                             <Bot size={12} className="text-white" />
                           </div>
                           <span className="text-sm">{item.agent}</span>
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-xs font-mono text-aragorn-emerald">
+                      <td className="py-3 pr-4 text-xs font-mono text-aldor-emerald">
                         <a href={`https://explorer.solana.com/tx/${item.hash}?cluster=devnet`} target="_blank" rel="noreferrer" className="hover:underline">
                           {truncate(item.hash, 6)}
                         </a>
                       </td>
                       <td className="py-3 pr-4 text-sm font-mono">{item.amount}</td>
                       <td className="py-3 pr-4 text-xs">{item.token}</td>
-                      <td className="py-3 text-xs text-aragorn-text-muted">
+                      <td className="py-3 text-xs text-aldor-text-muted">
                         {new Date(item.timestamp).toLocaleTimeString()}
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan={5} className="py-4 text-xs text-aragorn-text-muted text-center">No activity yet.</td></tr>
+                  <tr><td colSpan={5} className="py-4 text-xs text-aldor-text-muted text-center">No activity yet.</td></tr>
                 )}
               </tbody>
             </table>

@@ -10,10 +10,10 @@ import IntegrationsStatus from '@/components/IntegrationsStatus';
 
 const integrations = [
   { name: 'SNS Resolution', icon: Globe, status: 'connected', description: 'Bonfida .sol domain resolution', color: 'text-blue-400' },
-  { name: 'QVAC Embeddings', icon: Cpu, status: 'connected', description: 'Local on-device vector similarity', color: 'text-aragorn-purple-bright' },
-  { name: 'Umbra Privacy', icon: ShieldCheck, status: 'connected', description: 'Stealth address transfers', color: 'text-aragorn-emerald' },
-  { name: 'Dodo Payments', icon: CreditCard, status: 'connected', description: 'Fiat on-ramp integration', color: 'text-aragorn-amber' },
-  { name: 'Covalent Analytics', icon: BarChart3, status: 'connected', description: 'Blockchain data indexing', color: 'text-aragorn-cyan' },
+  { name: 'QVAC Embeddings', icon: Cpu, status: 'connected', description: 'Local on-device vector similarity', color: 'text-aldor-purple-bright' },
+  { name: 'Umbra Privacy', icon: ShieldCheck, status: 'connected', description: 'Stealth address transfers', color: 'text-aldor-emerald' },
+  { name: 'Dodo Payments', icon: CreditCard, status: 'connected', description: 'Fiat on-ramp integration', color: 'text-aldor-amber' },
+  { name: 'Covalent Analytics', icon: BarChart3, status: 'connected', description: 'Blockchain data indexing', color: 'text-aldor-cyan' },
 ];
 
 export default function IntegrationsPage() {
@@ -28,12 +28,12 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">SNS + QVAC Integrations</h1>
-        <p className="text-sm text-aragorn-text-secondary">Connected services and API health</p>
+        <p className="text-sm text-aldor-text-secondary">Connected services and API health</p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 size={24} className="animate-spin text-aragorn-emerald" />
+          <Loader2 size={24} className="animate-spin text-aldor-emerald" />
         </div>
       ) : (
         <>
@@ -44,7 +44,7 @@ export default function IntegrationsPage() {
           </div>
 
           {/* All integrations overview */}
-          <Card className="border-aragorn-border bg-aragorn-graphite/60">
+          <Card className="border-aldor-border bg-aldor-graphite/60">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">All Integrations</CardTitle>
             </CardHeader>
@@ -53,10 +53,10 @@ export default function IntegrationsPage() {
                 {integrations.map((integration) => (
                   <div
                     key={integration.name}
-                    className="p-4 rounded-lg bg-aragorn-black border border-aragorn-border hover:border-aragorn-emerald/20 transition-colors"
+                    className="p-4 rounded-lg bg-aldor-black border border-aldor-border hover:border-aldor-emerald/20 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`w-9 h-9 rounded-lg bg-aragorn-surface flex items-center justify-center ${integration.color}`}>
+                      <div className={`w-9 h-9 rounded-lg bg-aldor-surface flex items-center justify-center ${integration.color}`}>
                         <integration.icon size={18} />
                       </div>
                       <Badge variant={integration.status === 'connected' ? 'default' : 'secondary'} className="text-[10px]">
@@ -64,7 +64,7 @@ export default function IntegrationsPage() {
                       </Badge>
                     </div>
                     <h3 className="font-semibold text-xs mb-1">{integration.name}</h3>
-                    <p className="text-[10px] text-aragorn-text-secondary">{integration.description}</p>
+                    <p className="text-[10px] text-aldor-text-secondary">{integration.description}</p>
                   </div>
                 ))}
               </div>

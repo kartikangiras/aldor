@@ -7,14 +7,14 @@ export default function QVACPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">QVAC Embeddings</h1>
-        <p className="text-sm text-aragorn-text-secondary">Quantum Vector Agent Compute — local on-device similarity routing</p>
+        <p className="text-sm text-aldor-text-secondary">Quantum Vector Agent Compute — local on-device similarity routing</p>
       </div>
 
       <QVACIntegration />
 
-      <div className="p-5 border border-aragorn-border bg-aragorn-graphite/60 rounded-lg">
+      <div className="p-5 border border-aldor-border bg-aldor-graphite/60 rounded-lg">
         <h3 className="text-sm font-semibold mb-3">Agent Embedding Catalog</h3>
-        <p className="text-xs text-aragorn-text-secondary mb-3">
+        <p className="text-xs text-aldor-text-secondary mb-3">
           Each agent description is embedded into a high-dimensional vector. When a query arrives,
           QVAC computes cosine similarity between the query vector and all agent vectors to find the best match.
         </p>
@@ -41,22 +41,22 @@ export default function QVACPage() {
           ].map((item) => (
             <div
               key={item.agent}
-              className="flex flex-col p-2 rounded-md bg-aragorn-black border border-aragorn-border"
+              className="flex flex-col p-2 rounded-md bg-aldor-black border border-aldor-border"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold">{item.agent}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-aragorn-surface text-aragorn-text-muted">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-aldor-surface text-aldor-text-muted">
                   {item.category}
                 </span>
               </div>
-              <span className="text-[10px] text-aragorn-text-muted mt-1">{item.desc}</span>
+              <span className="text-[10px] text-aldor-text-muted mt-1">{item.desc}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aragorn-text-muted border-t border-aragorn-border">
+      <div className="flex items-center justify-center gap-2 py-4 text-[10px] text-aldor-text-muted border-t border-aldor-border">
         <span>Powered by</span>
         <img src="/qvac.png" alt="QVAC" className="w-4 h-4 rounded-sm object-contain" />
         <span className="text-purple-400 font-medium">QVAC Quantum Vector Agent Compute</span>

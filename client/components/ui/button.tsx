@@ -4,24 +4,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-aragorn-emerald disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-aldor-emerald disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-aragorn-emerald text-aragorn-black hover:bg-aragorn-emerald-dim shadow-[0_0_20px_rgba(0,255,148,0.2)]",
+          "bg-aldor-emerald text-aldor-black hover:bg-aldor-emerald-dim shadow-[0_0_20px_rgba(0,255,148,0.2)]",
         destructive:
-          "bg-aragorn-rose text-white hover:bg-rose-600",
+          "bg-aldor-rose text-white hover:bg-rose-600",
         outline:
-          "border border-aragorn-border-light bg-transparent hover:bg-aragorn-surface hover:border-aragorn-emerald/50",
+          "border border-aldor-border-light bg-transparent hover:bg-aldor-surface hover:border-aldor-emerald/50",
         secondary:
-          "bg-aragorn-surface text-aragorn-text hover:bg-aragorn-elevated border border-aragorn-border",
+          "bg-aldor-surface text-aldor-text hover:bg-aldor-elevated border border-aldor-border",
         ghost:
-          "hover:bg-aragorn-surface hover:text-aragorn-text",
+          "hover:bg-aldor-surface hover:text-aldor-text",
         link:
-          "text-aragorn-emerald underline-offset-4 hover:underline",
+          "text-aldor-emerald underline-offset-4 hover:underline",
         glow:
-          "bg-gradient-to-r from-aragorn-emerald to-aragorn-cyan text-aragorn-black font-semibold hover:shadow-[0_0_30px_rgba(0,255,148,0.3)]",
+          "bg-gradient-to-r from-aldor-emerald to-aldor-cyan text-aldor-black font-semibold hover:shadow-[0_0_30px_rgba(0,255,148,0.3)]",
       },
       size: {
         default: "h-9 px-4 py-2",

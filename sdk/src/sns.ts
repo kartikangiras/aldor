@@ -11,7 +11,7 @@ function deterministicKeyFromDomain(domain: string): string {
 }
 
 function getFallbackMap(env: NodeJS.ProcessEnv): Record<string, string> {
-  const raw = env.ARAGORN_SNS_FALLBACK_MAP ?? env.ARAGORN_AGENT_WALLET_MAP;
+  const raw = env.ALDOR_SNS_FALLBACK_MAP ?? env.ALDOR_AGENT_WALLET_MAP;
   if (!raw) return {};
 
   try {
@@ -38,7 +38,7 @@ export async function resolveAgent(domain: string, env: NodeJS.ProcessEnv = proc
   }
 
   const map = getFallbackMap(env);
-  const fallback = map[domain] ?? env[`ARAGORN_SNS_${domain.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}`];
+  const fallback = map[domain] ?? env[`ALDOR_SNS_${domain.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}`];
   if (!fallback) {
     throw new Error(`Unable to resolve domain '${domain}' via SNS or fallback map`);
   }

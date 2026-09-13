@@ -1,7 +1,7 @@
 import { BorshAccountsCoder, type Idl } from '@coral-xyz/anchor';
 import { Connection, PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
-import idl from '../../sdk/src/aragornIdl.js';
+import idl from '../../sdk/src/aldorIdl.js';
 import { AGENTS } from './agents.js';
 import { serverConfig } from './config.js';
 import { getAgentWalletMap } from './wallets.js';
@@ -24,7 +24,7 @@ export interface RegistryAgentEntry {
 }
 
 function getStealthKeyMap(env: NodeJS.ProcessEnv): Record<string, string> {
-  const raw = env.ARAGORN_UMBRA_STEALTH_MAP;
+  const raw = env.ALDOR_UMBRA_STEALTH_MAP;
   if (!raw) return {};
   try {
     return JSON.parse(raw) as Record<string, string>;
@@ -36,16 +36,16 @@ function getStealthKeyMap(env: NodeJS.ProcessEnv): Record<string, string> {
 export function getStealthKeyForDomain(domain: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
   const map = getStealthKeyMap(env);
   if (map[domain]) return map[domain];
-  const envKey = `ARAGORN_UMBRA_STEALTH_${domain.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}`;
+  const envKey = `ALDOR_UMBRA_STEALTH_${domain.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}`;
   return env[envKey];
 }
 
 function getProgramId(env: NodeJS.ProcessEnv): PublicKey | null {
-  if (!env.ARAGORN_PROGRAM_ID || env.ARAGORN_PROGRAM_ID === '11111111111111111111111111111111') {
+  if (!env.ALDOR_PROGRAM_ID || env.ALDOR_PROGRAM_ID === '11111111111111111111111111111111') {
     return null;
   }
   try {
-    return new PublicKey(env.ARAGORN_PROGRAM_ID);
+    return new PublicKey(env.ALDOR_PROGRAM_ID);
   } catch {
     return null;
   }

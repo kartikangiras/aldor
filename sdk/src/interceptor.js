@@ -9,11 +9,11 @@ export function createPaidAxios(options) {
     const instance = axios.create();
     instance.interceptors.request.use((config) => {
         config.headers = config.headers ?? {};
-        if (!config.headers['X-Aragorn-Max-Depth']) {
-            config.headers['X-Aragorn-Max-Depth'] = String(options.budget.maxDepth);
+        if (!config.headers['X-Aldor-Max-Depth']) {
+            config.headers['X-Aldor-Max-Depth'] = String(options.budget.maxDepth);
         }
-        if (!config.headers['X-Aragorn-Budget-Remaining']) {
-            config.headers['X-Aragorn-Budget-Remaining'] = options.budget.budgetRemaining;
+        if (!config.headers['X-Aldor-Budget-Remaining']) {
+            config.headers['X-Aldor-Budget-Remaining'] = options.budget.budgetRemaining;
         }
         return config;
     });
@@ -22,7 +22,7 @@ export function createPaidAxios(options) {
             throw error;
         }
         const original = error.config;
-        if (original._aragornRetried) {
+        if (original._aldorRetried) {
             throw error;
         }
         const challenge = decodeChallenge(error.response.data);
@@ -43,11 +43,11 @@ export function createPaidAxios(options) {
             throw new Error('Missing x402 accepts entry');
         }
         const proof = await options.signChallenge(accept);
-        original._aragornRetried = true;
+        original._aldorRetried = true;
         original.headers = original.headers ?? {};
         original.headers['X-Payment'] = Buffer.from(JSON.stringify(proof)).toString('base64');
-        original.headers['X-Aragorn-Payment-Signature'] = proof.signature;
-        original.headers['X-Aragorn-Ephemeral-Key'] = proof.ephemeralKey ?? 'mock-ephemeral-key';
+        original.headers['X-Aldor-Payment-Signature'] = proof.signature;
+        original.headers['X-Aldor-Ephemeral-Key'] = proof.ephemeralKey ?? 'mock-ephemeral-key';
         original.headers['X-Payment-Signature'] = proof.signature;
         return instance.request(original);
     });

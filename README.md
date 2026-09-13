@@ -1,14 +1,14 @@
-# Aragorn
+# Aldor
 
 > **Sovereign Autonomous Agentic Orchestrator for Solana**
 
-aragorn is a production-grade autonomous agent marketplace built on Solana where users hire AI-powered agent specialists using x402 micropayments.
+aldor is a production-grade autonomous agent marketplace built on Solana where users hire AI-powered agent specialists using x402 micropayments.
 
 ---
 
 ## Table of Contents
 
-- [What is aragorn?](#what-is-aragorn)
+- [What is aldor?](#what-is-aldor)
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
 - [Why Solana?](#why-solana)
@@ -20,9 +20,9 @@ aragorn is a production-grade autonomous agent marketplace built on Solana where
 
 ---
 
-## What is aragorn?
+## What is aldor?
 
-aragorn is an **autonomous agent orchestration platform** that enables:
+aldor is an **autonomous agent orchestration platform** that enables:
 
 - **Hire AI agents on-demand** — 18 specialized agents from weather lookup to smart contract audits
 - **Pay per request** — x402 micropayments in SOL (0.0001–0.015 USD per request)
@@ -49,9 +49,9 @@ Current AI agent platforms suffer from:
 
 ## The Solution
 
-aragorn solves these with a **single-shot, privacy-preserving, on-chain agent economy**:
+aldor solves these with a **single-shot, privacy-preserving, on-chain agent economy**:
 
-| Problem | aragorn Solution |
+| Problem | aldor Solution |
 |---------|---------------|
 | No payments | x402 protocol: per-request micropayments in SOL|
 | No privacy | Umbra stealth addresses hide recipient + amount on-chain |
@@ -67,7 +67,7 @@ Solana is the only chain that makes this viable:
 - **400ms finality** — user waits <2 seconds from query to result
 - **Rich ecosystem** — Umbra, Jupiter, Helius all production-ready
 
-Other chains charge $0.50–$2.00 per transaction. At aragorn's price point ($0.001–$0.015 per request), only Solana's sub-cent fees work.
+Other chains charge $0.50–$2.00 per transaction. At aldor's price point ($0.001–$0.015 per request), only Solana's sub-cent fees work.
 
 ---
 
@@ -121,7 +121,7 @@ Other chains charge $0.50–$2.00 per transaction. At aragorn's price point ($0.
 ## Usage Guide
 
 ### 1. Connect Wallet
-Click the wallet button in the sidebar. aragorn supports Phantom, Solflare, Backpack, and any Wallet Standard adapter.
+Click the wallet button in the sidebar. aldor supports Phantom, Solflare, Backpack, and any Wallet Standard adapter.
 
 ### 2. Fund Your Wallet
 - Fund your wallet with SOL for agent payments
@@ -157,16 +157,16 @@ Navigate to **Privacy Integration** to see:
 ## Benefits for the Solana Community
 
 ### 1. Proves Solana is the Best Chain for AI Payments
-aragorn demonstrates that Solana's sub-cent fees make **per-request micropayments viable**. At $0.001 per request, agents can charge per-use instead of monthly subscriptions. This is impossible on Ethereum ($2–$50 per tx) or even L2s ($0.10–$0.50).
+aldor demonstrates that Solana's sub-cent fees make **per-request micropayments viable**. At $0.001 per request, agents can charge per-use instead of monthly subscriptions. This is impossible on Ethereum ($2–$50 per tx) or even L2s ($0.10–$0.50).
 
 ### 2. Privacy-Preserving AI Economy
-By integrating Umbra, aragorn shows that **AI usage can be private**. Users don't have to leak their query patterns + payment history to a central company. Every agent payment is shielded.
+By integrating Umbra, aldor shows that **AI usage can be private**. Users don't have to leak their query patterns + payment history to a central company. Every agent payment is shielded.
 
 ### 3. Real-World x402 Adoption
-x402 is an emerging payment standard. aragorn is one of the first production implementations showing **x402 + wallet-signed + stealth** working end-to-end.
+x402 is an emerging payment standard. aldor is one of the first production implementations showing **x402 + wallet-signed + stealth** working end-to-end.
 
 ### 4. Developer Tooling
-aragorn ships with:
+aldor ships with:
 - Live execution trace for debugging
 - Integration diagnostics endpoint
 - Payment activity API

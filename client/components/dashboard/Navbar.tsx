@@ -19,7 +19,7 @@ export function DashboardNavbar() {
       
       <div className="flex items-center gap-4">
         <div className="relative">
-          <Search size={14} className={cn('absolute left-3 top-1/2 -translate-y-1/2 transition-colors', searchFocused ? 'text-aragorn-emerald' : 'text-white/20')} />
+          <Search size={14} className={cn('absolute left-3 top-1/2 -translate-y-1/2 transition-colors', searchFocused ? 'text-aldor-emerald' : 'text-white/20')} />
           <motion.input type="text" placeholder="Search agents, commands..."
             animate={{ width: searchFocused ? 288 : 220 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
@@ -60,7 +60,7 @@ export function DashboardNavbar() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white truncate">Operator</p>
-                  <p className="text-[10px] text-white/30 truncate">operator@aragorn.network</p>
+                  <p className="text-[10px] text-white/30 truncate">operator@aldor.network</p>
                 </div>
               </div>
             </div>
@@ -73,10 +73,10 @@ export function DashboardNavbar() {
             </DropdownMenuItem>
             <DropdownMenuItem className="text-white/40 focus:bg-white/[0.04] focus:text-white/70 cursor-pointer">
               <Bell size={13} className="mr-2" /> Notifications
-              <span className="ml-auto w-1.5 h-1.5 bg-aragorn-rose rounded-full" style={{ boxShadow: '0 0 4px rgba(251,113,133,0.7)' }} />
+              <span className="ml-auto w-1.5 h-1.5 bg-aldor-rose rounded-full" style={{ boxShadow: '0 0 4px rgba(251,113,133,0.7)' }} />
             </DropdownMenuItem>
             <DropdownMenuSeparator style={{ background: 'rgba(255,255,255,0.06)' }} />
-            <DropdownMenuItem className="text-aragorn-rose focus:bg-white/[0.04] cursor-pointer">
+            <DropdownMenuItem className="text-aldor-rose focus:bg-white/[0.04] cursor-pointer">
               <LogOut size={13} className="mr-2" /> Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
