@@ -1,4 +1,4 @@
-# Aldor
+# Aldor (Aragorn)
 
 > **Sovereign Autonomous Agentic Orchestrator for Solana**
 
