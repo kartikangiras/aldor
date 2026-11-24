@@ -152,6 +152,21 @@ Navigate to **Privacy Integration** to see:
 - **Economic Topology** — Agent balance network + platform architecture diagram
 - **Execution Trace** — Real-time SSE event stream
 
+## A/B Test: USD Price on Payment Approval
+
+aldor runs one experiment with [Flagsmith Experimentation](https://docs.flagsmith.com/experimentation): does showing the USD equivalent next to the SOL amount on the payment approval card get more people to approve agent payments?
+
+| | |
+|---|---|
+| Flag | `payment_amount_display`: `sol_only` (control) or `show_usd` |
+| Exposure | when the payment approval card is shown (`useExperiment` in `client/components/WalletPaymentModal.tsx`) |
+| Goal metric | `payment_approved`, sent when the user clicks **Sign & Pay** |
+| Guardrail | `payment_rejected`, sent when the user cancels a payment. It should not increase |
+
+Set `NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT` in `client/.env` to turn it on. Without it, everyone sees the control version and nothing is loaded.
+
+[Experiment Guard](https://github.com/kartikangiras/oakenshield) checks every pull request against this experiment and blocks changes that would break it, such as renaming one of the events or the flag (`.github/workflows/experiment-guard.yml`, `.experiment-guard.yml`).
+
 ---
 
 ## Benefits for the Solana Community

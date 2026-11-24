@@ -2,6 +2,8 @@
 
 import type { PendingPayment } from '@/lib/useWalletPaymentQueue';
 import { fundViaDodo } from '@/lib/api';
+import { useExperiment } from '@/lib/experiments';
+import { formatUsd, useSolUsdPrice } from '@/lib/solPrice';
 import {
   Wallet,
   CreditCard,
@@ -75,6 +77,10 @@ function PaymentCard({
   const isRejected = payment.status === 'rejected';
   const [dodoLoading, setDodoLoading] = useState(false);
   const [dodoUrl, setDodoUrl] = useState<string | null>(null);
+  // A/B test: the approval card shows the amount in SOL only (control) or also in USD (show_usd).
+  const amountDisplay = useExperiment('payment_amount_display');
+  const showUsd = amountDisplay.variant === 'show_usd';
+  const solUsd = useSolUsdPrice(showUsd);
 
   if (isSubmitted) {
     return (
@@ -220,6 +226,17 @@ function PaymentCard({
         >
           {formatAmount(payment.challenge)}
         </span>
+        {showUsd && solUsd !== null && (
+          <span
+            style={{
+              fontSize: 11,
+              color: '#888888',
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            ≈ {formatUsd(requiredAmount * solUsd)}
+          </span>
+        )}
         <span style={{ marginLeft: 'auto' }}>
           <TokenBadge />
         </span>

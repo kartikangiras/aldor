@@ -5,6 +5,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import type { StepEvent, X402Challenge, PaymentProof } from '@/lib/types';
 import { submitWalletPayment, rejectWalletPayment } from '@/lib/api';
 import { signChallengeWithWallet } from '@/lib/walletSigner';
+import { trackEvent } from '@/lib/experiments';
 
 export interface PendingPayment {
   requestId: string;
@@ -70,6 +71,7 @@ export function useWalletPaymentQueue() {
 
     const payment = pendingPayments.find((p) => p.requestId === requestId);
     if (!payment) return;
+    trackEvent('payment_approved');
 
     setPendingPayments((prev) =>
       prev.map((p) => (p.requestId === requestId ? { ...p, status: 'signing', error: undefined } : p))
@@ -144,6 +146,7 @@ export function useWalletPaymentQueue() {
   }, [pendingPayments, publicKey, signTransaction, sendTransaction, connection, removePayment]);
 
   const rejectPayment = useCallback(async (requestId: string) => {
+    trackEvent('payment_rejected');
     // Notify backend immediately so it doesn't wait for timeout
     try {
       await rejectWalletPayment(requestId, 'USER_REJECTED');
