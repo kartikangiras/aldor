@@ -1,5 +1,5 @@
 # Blocks pull requests that would break a running Flagsmith experiment (.experiment-guard.yml).
-# Needs the repository variable FLAGSMITH_ENVIRONMENT and the secret FLAGSMITH_API_KEY.
+# Needs the repository variable FLAGSMITH_ENVIRONMENT and the secret FLAGSMITH (a Flagsmith organisation API key).
 name: Experiment Guard
 on:
   pull_request:
@@ -20,4 +20,4 @@ jobs:
         with:
           flagsmith-environment: ${{ vars.FLAGSMITH_ENVIRONMENT }}
           auth: api-key
-          flagsmith-api-key: ${{ secrets.FLAGSMITH_API_KEY }}
+          flagsmith-api-key: ${{ secrets.FLAGSMITH }}
