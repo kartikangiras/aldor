@@ -71,7 +71,7 @@ export function useWalletPaymentQueue() {
 
     const payment = pendingPayments.find((p) => p.requestId === requestId);
     if (!payment) return;
-    trackEvent('payment_approved');
+    trackEvent('paymentApproved');
 
     setPendingPayments((prev) =>
       prev.map((p) => (p.requestId === requestId ? { ...p, status: 'signing', error: undefined } : p))
@@ -146,7 +146,7 @@ export function useWalletPaymentQueue() {
   }, [pendingPayments, publicKey, signTransaction, sendTransaction, connection, removePayment]);
 
   const rejectPayment = useCallback(async (requestId: string) => {
-    trackEvent('payment_rejected');
+    trackEvent('paymentRejected');
     // Notify backend immediately so it doesn't wait for timeout
     try {
       await rejectWalletPayment(requestId, 'USER_REJECTED');
