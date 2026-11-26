@@ -1,0 +1,15 @@
+# Experiment Guard (https://github.com/kartikangiras/oakenshield) reads the experiments running in
+# Flagsmith and blocks pull requests that would break them. Here it guards the payment approval
+# experiment: payment_amount_display, its variation show_usd, and the payment_approved and
+# payment_rejected events.
+version: 1
+flagsmith:
+  auth: api_key               # the workflow passes the environment key and an organisation API key
+identity_patterns:
+  - aldor-visitor             # the localStorage key behind the anonymous visitor id
+scan:
+  include:
+    - client/app/**
+    - client/components/**
+    - client/lib/**
+    - client/package.json
