@@ -71,7 +71,6 @@ export function useWalletPaymentQueue() {
 
     const payment = pendingPayments.find((p) => p.requestId === requestId);
     if (!payment) return;
-    trackEvent('paymentApproved');
 
     setPendingPayments((prev) =>
       prev.map((p) => (p.requestId === requestId ? { ...p, status: 'signing', error: undefined } : p))
@@ -98,6 +97,8 @@ export function useWalletPaymentQueue() {
       );
 
       await submitWalletPayment(requestId, proof);
+      // Counted once the wallet has signed and the payment is submitted, not on the click.
+      trackEvent('paymentApproved');
 
       setPendingPayments((prev) =>
         prev.map((p) => (p.requestId === requestId ? { ...p, status: 'submitted' } : p))
@@ -119,6 +120,7 @@ export function useWalletPaymentQueue() {
         errorMessage.includes('canceled') ||
         errorMessage.includes(' rejected')
       ) {
+        trackEvent('paymentRejected');
         try {
           await rejectWalletPayment(requestId, 'USER_REJECTED');
         } catch (e) {
