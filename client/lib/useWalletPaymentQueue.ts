@@ -98,7 +98,7 @@ export function useWalletPaymentQueue() {
 
       await submitWalletPayment(requestId, proof);
       // Counted once the wallet has signed and the payment is submitted, not on the click.
-      trackEvent('payment_approved');
+      trackEvent('paymentApproved');
 
       setPendingPayments((prev) =>
         prev.map((p) => (p.requestId === requestId ? { ...p, status: 'submitted' } : p))
@@ -120,7 +120,7 @@ export function useWalletPaymentQueue() {
         errorMessage.includes('canceled') ||
         errorMessage.includes(' rejected')
       ) {
-        trackEvent('payment_rejected');
+        trackEvent('paymentRejected');
         try {
           await rejectWalletPayment(requestId, 'USER_REJECTED');
         } catch (e) {
@@ -148,7 +148,7 @@ export function useWalletPaymentQueue() {
   }, [pendingPayments, publicKey, signTransaction, sendTransaction, connection, removePayment]);
 
   const rejectPayment = useCallback(async (requestId: string) => {
-    trackEvent('payment_rejected');
+    trackEvent('paymentRejected');
     // Notify backend immediately so it doesn't wait for timeout
     try {
       await rejectWalletPayment(requestId, 'USER_REJECTED');
